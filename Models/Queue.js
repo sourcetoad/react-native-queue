@@ -254,8 +254,8 @@ export class Queue {
       const timeoutUpperBound = (queueLifespanRemaining - 500 > 0) ? queueLifespanRemaining - 499 : 0; // Only get jobs with timeout at least 500ms < queueLifespanRemaining.
 
       const initialQuery = (queueLifespanRemaining)
-        ? 'active == FALSE AND failed == null AND timeout > 0 AND timeout < ' + timeoutUpperBound
-        : 'active == FALSE AND failed == null';
+        ? '(active == FALSE AND failed == null AND timeout > 0 AND timeout < ' + timeoutUpperBound + ') OR (active == FALSE AND failed == null AND timeout > 0 AND timeout < ' + timeoutUpperBound + ')'
+        : '(active == FALSE AND failed == null) OR (active == TRUE && failed == null)';
 
       let jobs = this.realm.objects('Job')
         .filtered(initialQuery)
@@ -271,8 +271,8 @@ export class Queue {
         const concurrency = this.worker.getConcurrency(nextJob.name);
 
         const allRelatedJobsQuery = (queueLifespanRemaining)
-          ? 'name == "'+ nextJob.name +'" AND active == FALSE AND failed == null AND timeout > 0 AND timeout < ' + timeoutUpperBound
-          : 'name == "'+ nextJob.name +'" AND active == FALSE AND failed == null';
+          ? '(name == "'+ nextJob.name +'" AND active == FALSE AND failed == null AND timeout > 0 AND timeout < ' + timeoutUpperBound + ') OR (name == "'+ nextJob.name +'" AND active == FALSE AND failed == null AND timeout > 0 AND timeout < ' + timeoutUpperBound + ')'
+          : '(name == "'+ nextJob.name +'" AND active == FALSE AND failed == null) OR (name == "'+ nextJob.name +'" AND active == TRUE AND failed == null)';
 
         const allRelatedJobs = this.realm.objects('Job')
           .filtered(allRelatedJobsQuery)
