@@ -93,7 +93,6 @@ export class Queue {
     }
 
     this.realm.write(() => {
-
       this.realm.create('Job', {
         id: uuid.v4(),
         name,
@@ -107,7 +106,6 @@ export class Queue {
         created: new Date(),
         failed: null
       });
-
     });
 
     // Start queue on job creation if it isn't running by default.
@@ -214,14 +212,14 @@ export class Queue {
       let jobs = null;
       this.realm.write(() => {
 
-        jobs = this.realm.objects('Job');
+        jobs = Array.from(this.realm.objects('Job'));
 
       });
 
       return jobs;
 
     } else {
-      return await this.realm.objects('Job');
+      return Array.from(await this.realm.objects('Job'));
     }
 
   }
@@ -257,9 +255,9 @@ export class Queue {
         ? '(active == FALSE AND failed == null AND timeout > 0 AND timeout < ' + timeoutUpperBound + ') OR (active == FALSE AND failed == null AND timeout > 0 AND timeout < ' + timeoutUpperBound + ')'
         : '(active == FALSE AND failed == null) OR (active == TRUE && failed == null)';
 
-      let jobs = this.realm.objects('Job')
+      let jobs = Array.from(this.realm.objects('Job')
         .filtered(initialQuery)
-        .sorted([['priority', true], ['created', false]]);
+        .sorted([['priority', true], ['created', false]]));
 
       if (jobs.length) {
         nextJob = jobs[0];
@@ -267,7 +265,6 @@ export class Queue {
 
       // If next job exists, get concurrent related jobs appropriately.
       if (nextJob) {
-
         const concurrency = this.worker.getConcurrency(nextJob.name);
 
         const allRelatedJobsQuery = (queueLifespanRemaining)
@@ -292,9 +289,9 @@ export class Queue {
 
         // Reselect now-active concurrent jobs by id.
         const reselectQuery = concurrentJobIds.map( jobId => 'id == "' + jobId + '"').join(' OR ');
-        const reselectedJobs = this.realm.objects('Job')
+        const reselectedJobs = Array.from(this.realm.objects('Job')
           .filtered(reselectQuery)
-          .sorted([['priority', true], ['created', false]]);
+          .sorted([['priority', true], ['created', false]]));
 
         concurrentJobs = reselectedJobs.slice(0, concurrency);
 
@@ -409,8 +406,8 @@ export class Queue {
 
       this.realm.write(() => {
 
-        let jobs = this.realm.objects('Job')
-          .filtered('name == "' + jobName + '"');
+        let jobs = Array.from(this.realm.objects('Job')
+          .filtered('name == "' + jobName + '"'));
 
         if (jobs.length) {
           this.realm.delete(jobs);

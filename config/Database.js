@@ -5,21 +5,37 @@
 import { Config } from './config';
 import Realm from 'realm';
 
-const JobSchema = {
-  name: 'Job',
-  primaryKey: 'id',
-  properties: {
-    id:  'string', // UUID.
-    name: 'string', // Job name to be matched with worker function.
-    payload: 'string', // Job payload stored as JSON.
-    data: 'string', // Store arbitrary data like "failed attempts" as JSON.
-    priority: 'int', // -5 to 5 to indicate low to high priority.
-    active: { type: 'bool', default: false}, // Whether or not job is currently being processed.
-    timeout: 'int', // Job timeout in ms. 0 means no timeout.
-    created: 'date', // Job creation timestamp.
-    failed: 'date?' // Job failure timestamp (null until failure).
+class JobSchema {
+  static schema = {
+    name: 'Job',
+    primaryKey: 'id',
+    properties: {
+      id:  'string', // UUID.
+      name: 'string', // Job name to be matched with worker function.
+      payload: 'string', // Job payload stored as JSON.
+      data: 'string', // Store arbitrary data like "failed attempts" as JSON.
+      priority: 'int', // -5 to 5 to indicate low to high priority.
+      active: { type: 'bool', default: false}, // Whether or not job is currently being processed.
+      timeout: 'int', // Job timeout in ms. 0 means no timeout.
+      created: 'date', // Job creation timestamp.
+      failed: 'date?' // Job failure timestamp (null until failure).
+    }
+  };
+
+  get values() {
+    return {
+      id: this.id,
+      name: this.name,
+      payload: this.payload,
+      data: this.data,
+      priority: this.priority,
+      active: this.active,
+      timeout: this.timeout,
+      created: this.created,
+      failed: this.failed
+    };
   }
-};
+}
 
 export default class Database {
 
