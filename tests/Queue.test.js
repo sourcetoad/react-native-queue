@@ -104,7 +104,7 @@ describe('Models/Queue', function() {
     // causing the timeouts in this test to become really flakey (setTimeout can't
     // guarantee exact time of function execution, and in a high load env execution can
     // be significantly delayed.
-    if (process.env.COVERALLS_ENV == 'production') {
+    if (process.env.CI === true) {
       return true;
     }
 
@@ -346,13 +346,11 @@ describe('Models/Queue', function() {
         badJobs.push({id, payload});
       }
 
-
       // Since these all run concurrently, only subtract the job with the longest
       // timeout that will presumabely finish last.
-      if (payload.payloadTimeout == 600) {
+      if (payload.payloadTimeout === 600) {
         remainingLifespan = remainingLifespan - payload.payloadTimeout;
       }
-
 
       await new Promise((resolve) => {
         setTimeout(resolve, payload.payloadTimeout);
@@ -1514,7 +1512,7 @@ describe('Models/Queue', function() {
     // causing the timeouts in this test to become really flakey (setTimeout can't
     // guarantee exact time of function execution, and in a high load env execution can
     // be significantly delayed.
-    if (process.env.COVERALLS_ENV == 'production') {
+    if (process.env.CI === true) {
       return true;
     }
 
@@ -1563,7 +1561,7 @@ describe('Models/Queue', function() {
     // causing the timeouts in this test to become really flakey (setTimeout can't
     // guarantee exact time of function execution, and in a high load env execution can
     // be significantly delayed.
-    if (process.env.COVERALLS_ENV == 'production') {
+    if (process.env.CI === true) {
       return true;
     }
 
@@ -1632,7 +1630,7 @@ describe('Models/Queue', function() {
     // causing the timeouts in this test to become really flakey (setTimeout can't
     // guarantee exact time of function execution, and in a high load env execution can
     // be significantly delayed.
-    if (process.env.COVERALLS_ENV == 'production') {
+    if (process.env.CI === true) {
       return true;
     }
 
@@ -1685,16 +1683,6 @@ describe('Models/Queue', function() {
   });
 
   it('onFailure, onFailed lifecycle callbacks work as expected.', async () => {
-
-    // This test will intermittently fail in CI environments like travis-ci.
-    // Intermittent failure is a result of the poor performance of CI environments
-    // causing the timeouts in this test to become really flakey (setTimeout can't
-    // guarantee exact time of function execution, and in a high load env execution can
-    // be significantly delayed.
-    if (process.env.COVERALLS_ENV == 'production') {
-      return true;
-    }
-
     const queue = await QueueFactory();
     queue.flushQueue();
     const jobName = 'job-name';
@@ -1742,16 +1730,6 @@ describe('Models/Queue', function() {
   });
 
   it('onComplete fires only once on job with multiple attempts that ends in success.', async () => {
-
-    // This test will intermittently fail in CI environments like travis-ci.
-    // Intermittent failure is a result of the poor performance of CI environments
-    // causing the timeouts in this test to become really flakey (setTimeout can't
-    // guarantee exact time of function execution, and in a high load env execution can
-    // be significantly delayed.
-    if (process.env.COVERALLS_ENV == 'production') {
-      return true;
-    }
-
     const queue = await QueueFactory();
     queue.flushQueue();
     const jobName = 'job-name';
@@ -1819,16 +1797,6 @@ describe('Models/Queue', function() {
   });
 
   it('onComplete fires only once on job with multiple attempts that ends in failure.', async () => {
-
-    // This test will intermittently fail in CI environments like travis-ci.
-    // Intermittent failure is a result of the poor performance of CI environments
-    // causing the timeouts in this test to become really flakey (setTimeout can't
-    // guarantee exact time of function execution, and in a high load env execution can
-    // be significantly delayed.
-    if (process.env.COVERALLS_ENV == 'production') {
-      return true;
-    }
-
     const queue = await QueueFactory();
     queue.flushQueue();
     const jobName = 'job-name';
@@ -1883,16 +1851,6 @@ describe('Models/Queue', function() {
   });
 
   it('onStart, onSuccess, onComplete Job lifecycle callbacks do not block job processing.', async () => {
-
-    // This test will intermittently fail in CI environments like travis-ci.
-    // Intermittent failure is a result of the poor performance of CI environments
-    // causing the timeouts in this test to become really flakey (setTimeout can't
-    // guarantee exact time of function execution, and in a high load env execution can
-    // be significantly delayed.
-    if (process.env.COVERALLS_ENV == 'production') {
-      return true;
-    }
-
     const queue = await QueueFactory();
     queue.flushQueue();
     const jobName = 'job-name';
@@ -1978,16 +1936,6 @@ describe('Models/Queue', function() {
   });
 
   it('onFailure, onFailed Job lifecycle callbacks do not block job processing.', async () => {
-
-    // This test will intermittently fail in CI environments like travis-ci.
-    // Intermittent failure is a result of the poor performance of CI environments
-    // causing the timeouts in this test to become really flakey (setTimeout can't
-    // guarantee exact time of function execution, and in a high load env execution can
-    // be significantly delayed.
-    if (process.env.COVERALLS_ENV == 'production') {
-      return true;
-    }
-
     const queue = await QueueFactory();
     queue.flushQueue();
     const jobName = 'job-name';
