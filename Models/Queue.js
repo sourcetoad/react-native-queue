@@ -369,7 +369,7 @@ export class Queue {
    * If jobName is supplied, only jobs associated with that name
    * will be deleted. Otherwise all jobs in queue will be deleted.
    *
-   * @param jobName {string} - Name associated with job (and related job worker).
+   * @param jobName {string|null} - Name associated with job (and related job worker).
    */
   flushQueue(jobName = null) {
     if (jobName) {
