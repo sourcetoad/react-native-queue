@@ -4,12 +4,12 @@
   "description": "A React Native Job Queue",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/.bin/jest --coverage && if [ \"$COVERALLS_ENV\" = \"production\" ]; then cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js; fi",
+    "test": "jest --coverage",
     "lint": "eslint ."
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/billmalarky/react-native-queue.git"
+    "url": "git+https://github.com/sourcetoad/react-native-queue/react-native-queue.git"
   },
   "keywords": [
     "react",
@@ -21,9 +21,9 @@
   "author": "Reid Mayo",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/billmalarky/react-native-queue/issues"
+    "url": "https://github.com/sourcetoad/react-native-queue/issues"
   },
-  "homepage": "https://github.com/billmalarky/react-native-queue#readme",
+  "homepage": "https://github.com/sourcetoad/react-native-queue#readme",
   "dependencies": {
     "promise-reflect": "^1.1.0",
     "react-native-uuid": "^1.4.9",
