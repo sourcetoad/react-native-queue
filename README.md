@@ -3,11 +3,8 @@
 # React Native Queue
 #### Simple. Powerful. Persistent.
 
-[![Build Status](https://travis-ci.org/billmalarky/react-native-queue.svg?branch=master)](https://travis-ci.org/billmalarky/react-native-queue)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/billmalarky/react-native-queue/blob/master/LICENSE)
-[![ESLint](https://img.shields.io/badge/eslint-ok-green.svg)](https://github.com/billmalarky/react-native-queue/blob/master/.eslintrc.js)
-[![JSDoc](https://img.shields.io/badge/jsdoc-100%25%20code%20documentation-green.svg)](http://usejsdoc.org/)
-[![Coverage Status](https://coveralls.io/repos/github/billmalarky/react-native-queue/badge.svg?branch=master)](https://coveralls.io/github/billmalarky/react-native-queue?branch=master)
+[![Node.js CI](https://github.com/sourcetoad/react-native-queue/master/workflows/build.yml/badge.svg)](https://github.com/sourcetoad/react-native-queue/master/workflows/build.yml)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/sourcetoad/react-native-queue/blob/master/LICENSE)
 
 A React Native at-least-once priority job queue / task queue backed by persistent Realm storage. Jobs will persist until completed, even if user closes and re-opens app. React Native Queue is easily integrated into OS background processes (services) so you can ensure the queue will continue to process until all jobs are completed even if app isn't in focus. It also plays well with Workers so your jobs can be thrown on the queue, then processed in dedicated worker threads for greatly improved processing performance.
 
@@ -23,7 +20,6 @@ A React Native at-least-once priority job queue / task queue backed by persisten
 * [Advanced Usage Examples](#advanced-usage-examples)
   * [Advanced Job Full Example](#advanced-job-full-example)
   * [OS Background Task Full Example](#os-background-task-full-example)
-* [Tutorials](#tutorials)
 
 ## Features
 
@@ -86,7 +82,6 @@ Creating and processing jobs consists of:
 4. Starting the queue (note this happens automatically on job creation, but sometimes the queue must be explicitly started such as in a OS background task or on app restart). Queue can be started with a lifespan in order to limit queue processing time.
 
 ```js
-
 import queueFactory from 'react-native-queue';
 
 // Of course this line needs to be in the context of an async function, 
@@ -104,7 +99,6 @@ queue.addWorker('example-job', async (id, payload) => {
       resolve();
     }, 5000);
   });
-
 });
 
 // Create a couple "example-job" jobs.
@@ -144,7 +138,6 @@ queue.createJob('example-job', {
 });
 
 console.log('The above jobs are processing in the background of app now.');
-
 ```
 
 ## Options and Job Lifecycle Callbacks
@@ -156,7 +149,6 @@ queue.addWorker() accepts an options object in order to tweak standard functiona
 **IMPORTANT: Job Lifecycle callbacks are called asynchronously.** They do not block job processing or each other. Don't put logic in onStart that you expect to be completed before the actual job process begins executing. Don't put logic in onFailure you expect to be completed before onFailed is called. You can, of course, assume that the job process has completed (or failed) before onSuccess, onFailure, onFailed, or onComplete are asynchonrously called.
 
 ```js
-
 queue.addWorker('job-name-here', async (id, payload) => { console.log(id); }, {
   
   // Set max number of jobs for this worker to process concurrently.
@@ -172,39 +164,28 @@ queue.addWorker('job-name-here', async (id, payload) => { console.log(id); }, {
   // As such, do not place any logic in onStart that your actual job worker function will depend on,
   // this type of logic should of course go inside the job worker function itself.
   onStart: async (id, payload) => {
-    
-    console.log('Job "job-name-here" with id ' + id + ' has started processing.');  
-    
+    console.log('Job "job-name-here" with id ' + id + ' has started processing.');
   },
   
   // onSuccess job callback handler is fired after a job successfully completes processing.
   onSuccess: async (id, payload) => {
-    
     console.log('Job "job-name-here" with id ' + id + ' was successful.');
-    
   },
   
   // onFailure job callback handler is fired after each time a job fails (onFailed also fires if job has reached max number of attempts).
   onFailure: async (id, payload) => {
-    
     console.log('Job "job-name-here" with id ' + id + ' had an attempt end in failure.');
-    
   },
   
   // onFailed job callback handler is fired if job fails enough times to reach max number of attempts.
   onFailed: async (id, payload) => {
-    
     console.log('Job "job-name-here" with id ' + id + ' has failed.');
-    
   },
   
   // onComplete job callback handler fires after job has completed processing successfully or failed entirely.
   onComplete: async (id, payload) => {
-    
     console.log('Job "job-name-here" with id ' + id + ' has completed processing.');
-    
   }
-  
 }); 
 
 ```
@@ -214,9 +195,7 @@ queue.addWorker('job-name-here', async (id, payload) => { console.log(id); }, {
 queue.createJob() accepts an options object in order to tweak standard functionality.
 
 ```js
-
 queue.createJob('job-name-here', {foo: 'bar'}, {
-  
   // Higher priority jobs (10) get processed before lower priority jobs (-10).
   // Any int will work, priority 1000 will be processed before priority 10, though this is probably overkill.
   // Defaults to 0.
@@ -239,10 +218,7 @@ queue.createJob('job-name-here', {foo: 'bar'}, {
   // Number of times to attempt a failing job before marking job as failed and moving on.
   // Defaults to 1.
   attempts: 4, // If this job fails to process 4 times in a row, it will be marked as failed.
-  
-}); 
-
-
+});
 ```
 
 ## Testing with Jest
@@ -262,7 +238,6 @@ Because realm will write database files to the root test directory when running 
 #### Advanced Job Full Example
 
 ```js
-
 import React, { Component } from 'react';
 import {
   Platform,
@@ -284,11 +259,9 @@ export default class App extends Component<{}> {
     };
 
     this.init();
-
   }
 
   async init() {
-
     const queue = await queueFactory();
 
     //
@@ -322,7 +295,6 @@ export default class App extends Component<{}> {
           resolve();
         }, 1000);
       });
-
     });
 
     //
@@ -350,7 +322,6 @@ export default class App extends Component<{}> {
           resolve();
         }, 1000);
       });
-
     });
 
     queue.addWorker('job-chain-2nd-step', async (id, payload) => {
@@ -370,7 +341,6 @@ export default class App extends Component<{}> {
           resolve();
         }, 1000);
       });
-
     });
 
     queue.addWorker('job-chain-final-step', async (id, payload) => {
@@ -385,7 +355,6 @@ export default class App extends Component<{}> {
           resolve();
         }, 1000);
       });
-
     });
 
     // Start queue to process any jobs that hadn't finished when app was last closed.
@@ -395,7 +364,6 @@ export default class App extends Component<{}> {
     this.setState({
       queue
     });
-
   }
 
   makeJob(jobName, payload = {}) {
@@ -403,7 +371,6 @@ export default class App extends Component<{}> {
   }
 
   render() {
-
     return (
       <View style={styles.container}>
         <Text style={styles.welcome}>
@@ -431,8 +398,6 @@ const styles = StyleSheet.create({
     margin: 10,
   },
 });
-
-
 ```
 
 #### OS Background Task Full Example
@@ -442,7 +407,6 @@ For the purpose of this example we will use the [React Native Background Task](h
 Follow the [installation steps](https://github.com/jamesisaac/react-native-background-task#installation) for React Native Background Task.
 
 ```js
-
 import React, { Component } from 'react';
 import {
   Platform,
@@ -470,7 +434,6 @@ BackgroundTask.define(async () => {
     } else {
       await AsyncStorage.setItem('c3poData', 'C-3PO arbitrary data loaded!');
     }
-
   });
 
   // Start the queue with a lifespan
@@ -482,11 +445,9 @@ BackgroundTask.define(async () => {
 
   // finish() must be called before OS hits timeout.
   BackgroundTask.finish();
-
 });
 
 export default class App extends Component<{}> {
-
   constructor(props) {
     super(props);
 
@@ -496,11 +457,9 @@ export default class App extends Component<{}> {
     };
 
     this.init();
-
   }
 
   async init() {
-
     const queue = await queueFactory();
 
     // Add the worker.
@@ -515,7 +474,6 @@ export default class App extends Component<{}> {
     this.setState({
       queue
     });
-
   }
 
   componentDidMount() {
@@ -532,7 +490,6 @@ export default class App extends Component<{}> {
   }
 
   async checkData() {
-
     const lukeData = await AsyncStorage.getItem('lukeData');
     const c3poData = await AsyncStorage.getItem('c3poData');
 
@@ -542,11 +499,9 @@ export default class App extends Component<{}> {
         c3poData: (c3poData) ? c3poData : 'No data loaded from OS background task yet for C-3PO.'
       }
     });
-
   }
 
   render() {
-
     let output = 'No data loaded from OS background task yet.';
     if (this.state.data) {
       output = JSON.stringify(this.state.data);
@@ -566,7 +521,6 @@ export default class App extends Component<{}> {
         <Text>{output}</Text>
       </View>
     );
-
   }
 }
 
@@ -583,15 +537,4 @@ const styles = StyleSheet.create({
     margin: 10,
   },
 });
-
 ```
-
-## Tutorials
-
-#### Easy OS Background Tasks in React Native
-
-An in-depth guide to setting up background tasks / services that run periodically when the app is closed.
-
-* [Hosted on Medium](https://hackernoon.com/easy-os-background-tasks-in-react-native-bc4476c48b8a)
-* [Raw Markdown](/docs/easy-os-background-tasks-in-react-native.md)
-
