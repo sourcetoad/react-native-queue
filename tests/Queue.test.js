@@ -259,7 +259,7 @@ describe('Models/Queue', function() {
     // causing the timeouts in this test to become really flakey (setTimeout can't
     // guarantee exact time of function execution, and in a high load env execution can
     // be significantly delayed.
-    if (process.env.COVERALLS_ENV == 'production') {
+    if (process.env.CI === true) {
       return true;
     }
 
