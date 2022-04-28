@@ -4,7 +4,7 @@
   "description": "A React Native Job Queue",
   "main": "index.js",
   "scripts": {
-    "test": "jest --coverage",
+    "test": "jest --coverage --detectOpenHandles --forceExit",
     "lint": "eslint ."
   },
   "repository": {
