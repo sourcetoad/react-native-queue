@@ -1,15 +1,12 @@
-
 // Define globals for eslint.
-/* global describe it */
+/* global describe it, jest */
 
 // Load dependencies
 import should from 'should'; // eslint-disable-line no-unused-vars
 import Worker from '../Models/Worker';
 
 describe('Models/Worker', function() {
-
   it('#addWorker() should validate input', async () => {
-
     const worker = new Worker();
 
     try {
@@ -25,11 +22,9 @@ describe('Models/Worker', function() {
     } catch (error) {
       error.should.deepEqual(new Error('Job name and associated worker function must be supplied.'));
     }
-
   });
 
   it('#addWorker() should work as expected', async () => {
-
     const worker = new Worker();
 
     worker.addWorker('test-job-one', async () => {});
@@ -61,33 +56,24 @@ describe('Models/Worker', function() {
       onFailed: null,
       onComplete: null
     });
-
   });
 
   it('#removeWorker() should work as expected', async () => {
-
     const worker = new Worker();
 
     // Add workers.
     worker.addWorker('test-job-one', async () => {});
-
     const workerOptions = {
       concurrency: 3
     };
     worker.addWorker('test-job-two', async () => {}, workerOptions);
-
     worker.addWorker('test-job-three', async () => {});
-
     Object.keys(Worker.workers).should.deepEqual(['test-job-one', 'test-job-two', 'test-job-three']);
-
     worker.removeWorker('test-job-two');
-
     Object.keys(Worker.workers).should.deepEqual(['test-job-one', 'test-job-three']);
-
   });
 
   it('#getConcurrency() should throw error if no worker assigned to passed in job name.', async () => {
-
     const worker = new Worker();
     const jobName = 'no-worker-exists';
 
@@ -97,11 +83,9 @@ describe('Models/Worker', function() {
     } catch (error) {
       error.should.deepEqual(new Error('Job ' + jobName + ' does not have a worker assigned to it.'));
     }
-
   });
 
   it('#getConcurrency() should return worker job concurrency', async () => {
-
     const worker = new Worker();
 
     // Add worker.
@@ -109,15 +93,11 @@ describe('Models/Worker', function() {
       concurrency: 36
     };
     worker.addWorker('test-job-one', async () => {}, workerOptions);
-
     worker.getConcurrency('test-job-one').should.equal(36);
-
   });
 
   it('#executeJob() should error if worker not assigned to job yet.', async () => {
-
     const worker = new Worker();
-
     const jobName = 'this-worker-does-not-exist';
 
     try {
@@ -126,11 +106,13 @@ describe('Models/Worker', function() {
     } catch (error) {
       error.should.deepEqual(new Error('Job ' + jobName + ' does not have a worker assigned to it.'));
     }
-
   });
 
+  /**
+   * TODO: fix this test
+   */
   it('#executeJob() timeout logic should work if timeout is set.', async () => {
-
+    jest.useFakeTimers('modern');
     const jobTimeout = 100;
 
     const job = {
@@ -150,12 +132,14 @@ describe('Models/Worker', function() {
     };
 
     const worker = new Worker();
-
     worker.addWorker('test-job-one', async () => {
       return new Promise((resolve) => {
         setTimeout(() => {
           resolve(true);
         }, 1000);
+
+        // advance timer by 1sec
+        jest.advanceTimersByTime(1000);
       });
     });
 
@@ -165,11 +149,10 @@ describe('Models/Worker', function() {
     } catch (error) {
       error.should.deepEqual(new Error('TIMEOUT: Job id: ' + job.id + ' timed out in ' + jobTimeout  + 'ms.'));
     }
-
+    jest.useRealTimers('modern');
   });
 
   it('#executeJob() should execute a job correctly.', async () => {
-
     let counter = 0;
 
     const job = {
@@ -189,9 +172,7 @@ describe('Models/Worker', function() {
     };
 
     const worker = new Worker();
-
     worker.addWorker('test-job-one', async () => {
-
       // Job increments counter.
       counter++;
 
@@ -205,11 +186,9 @@ describe('Models/Worker', function() {
     counter.should.equal(0);
     await worker.executeJob(job);
     counter.should.equal(1);
-
   });
 
   it('#executeJobLifecycleCallback() should execute a job lifecycle method correctly.', async () => {
-
     let onStartCalled = false;
     let testPassed = false;
 
@@ -233,7 +212,6 @@ describe('Models/Worker', function() {
 
     worker.addWorker('test-job-one', async () => {}, {
       onStart: (id, payload) => {
-
         onStartCalled = true;
 
         // Verify params passed correctly off job and payload JSON has been parsed.
@@ -247,7 +225,6 @@ describe('Models/Worker', function() {
         // executeJobLifecycleCallback() if they throw an error. While any thrown errors will be
         // output to console, the test will still pass so won't be caught by CI testing.
         testPassed = true;
-
       }
     });
 
@@ -256,11 +233,9 @@ describe('Models/Worker', function() {
     await worker.executeJobLifecycleCallback('onStart', job.name, job.id, payload);
     onStartCalled.should.equal(true);
     testPassed.should.equal(true);
-
   });
 
   it('#executeJobLifecycleCallback() should throw an error on invalid job lifecycle name.', async () => {
-
     let onStartCalled = false;
     let testPassed = true;
 
@@ -281,13 +256,10 @@ describe('Models/Worker', function() {
     };
 
     const worker = new Worker();
-
     worker.addWorker('test-job-one', async () => {}, {
       onStart: () => {
-
         testPassed = false;
         throw new Error('Should not be called.');
-
       }
     });
 
@@ -300,11 +272,9 @@ describe('Models/Worker', function() {
     }
     onStartCalled.should.equal(false);
     testPassed.should.equal(true);
-
   });
 
   it('#executeJobLifecycleCallback() job lifecycle callbacks that error out should gracefully degrade to console error.', async () => {
-
     let onStartCalled = false;
     let consoleErrorCalled = false;
 
@@ -335,13 +305,10 @@ describe('Models/Worker', function() {
     };
 
     const worker = new Worker();
-
     worker.addWorker('test-job-one', async () => {}, {
       onStart: () => {
-
         onStartCalled = true;
         throw new Error('Something failed catastrophically!');
-
       }
     });
 
@@ -354,7 +321,5 @@ describe('Models/Worker', function() {
 
     // Re-apply console.error.
     console.error = consoleErrorCache; // eslint-disable-line no-console
-
   });
-
 });

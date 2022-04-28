@@ -5,15 +5,12 @@
  * Queue Job Realm Schema defined in ../config/Database
  *
  */
-
 import Database from '../config/Database';
 import uuid from 'react-native-uuid';
 import Worker from './Worker';
 import promiseReflect from 'promise-reflect';
 
-
 export class Queue {
-
   /**
    *
    * Set initial class properties.
@@ -82,7 +79,6 @@ export class Queue {
    * @param startQueue - {boolean} - Whether or not to immediately begin prcessing queue. If false queue.start() must be manually called.
    */
   createJob(name, payload = {}, options = {}, startQueue = true) {
-
     if (!name) {
       throw new Error('Job name must be supplied.');
     }
@@ -109,10 +105,9 @@ export class Queue {
     });
 
     // Start queue on job creation if it isn't running by default.
-    if (startQueue && this.status == 'inactive') {
+    if (startQueue && this.status === 'inactive') {
       this.start();
     }
-
   }
 
   /**
@@ -139,9 +134,8 @@ export class Queue {
    * @return {boolean|undefined} - False if queue is already started. Otherwise nothing is returned when queue finishes processing.
    */
   async start(lifespan = 0) {
-
     // If queue is already running, don't fire up concurrent loop.
-    if (this.status == 'active') {
+    if (this.status === 'active') {
       return false;
     }
 
@@ -160,8 +154,7 @@ export class Queue {
       concurrentJobs = await this.getConcurrentJobs();
     }
 
-    while (this.status == 'active' && concurrentJobs.length) {
-
+    while (this.status === 'active' && concurrentJobs.length) {
       // Loop over jobs and process them concurrently.
       const processingJobs = concurrentJobs.map( job => {
         return this.processJob(job);
@@ -179,11 +172,9 @@ export class Queue {
       } else {
         concurrentJobs = await this.getConcurrentJobs();
       }
-
     }
 
     this.status = 'inactive';
-
   }
 
   /**
@@ -206,22 +197,16 @@ export class Queue {
    * @return {promise} - Promise that resolves to a collection of all the jobs in the queue.
    */
   async getJobs(sync = false) {
-
     if (sync) {
-
       let jobs = null;
       this.realm.write(() => {
-
         jobs = Array.from(this.realm.objects('Job'));
-
       });
 
       return jobs;
-
     } else {
       return Array.from(await this.realm.objects('Job'));
     }
-
   }
 
   /**
@@ -239,11 +224,9 @@ export class Queue {
    * @return {promise} - Promise resolves to an array of job(s) to be processed next by the queue.
    */
   async getConcurrentJobs(queueLifespanRemaining = 0) {
-
     let concurrentJobs = [];
 
     this.realm.write(() => {
-
       // Get next job from queue.
       let nextJob = null;
 
@@ -294,9 +277,7 @@ export class Queue {
           .sorted([['priority', true], ['created', false]]));
 
         concurrentJobs = reselectedJobs.slice(0, concurrency);
-
       }
-
     });
 
     return concurrentJobs;
@@ -319,7 +300,6 @@ export class Queue {
    * @param job {object} - Job realm model object
    */
   async processJob(job) {
-
     // Data must be cloned off the realm job object for several lifecycle callbacks to work correctly.
     // This is because realm job is deleted before some callbacks are called if job processed successfully.
     // More info: https://github.com/billmalarky/react-native-queue/issues/2#issuecomment-361418965
@@ -331,27 +311,21 @@ export class Queue {
     this.worker.executeJobLifecycleCallback('onStart', jobName, jobId, jobPayload);
 
     try {
-
       await this.worker.executeJob(job);
 
       // On successful job completion, remove job
       this.realm.write(() => {
-
         this.realm.delete(job);
-
       });
 
       // Job has processed successfully, fire onSuccess and onComplete job lifecycle callbacks.
       this.worker.executeJobLifecycleCallback('onSuccess', jobName, jobId, jobPayload);
       this.worker.executeJobLifecycleCallback('onComplete', jobName, jobId, jobPayload);
-
     } catch (error) {
-
       // Handle job failure logic, including retries.
       let jobData = JSON.parse(job.data);
 
       this.realm.write(() => {
-
         // Increment failed attempts number
         if (!jobData.failedAttempts) {
           jobData.failedAttempts = 1;
@@ -375,7 +349,6 @@ export class Queue {
         if (jobData.failedAttempts >= jobData.attempts) {
           job.failed = new Date();
         }
-
       });
 
       // Execute job onFailure lifecycle callback.
@@ -386,9 +359,7 @@ export class Queue {
         this.worker.executeJobLifecycleCallback('onFailed', jobName, jobId, jobPayload);
         this.worker.executeJobLifecycleCallback('onComplete', jobName, jobId, jobPayload);
       }
-
     }
-
   }
 
   /**
@@ -398,34 +369,24 @@ export class Queue {
    * If jobName is supplied, only jobs associated with that name
    * will be deleted. Otherwise all jobs in queue will be deleted.
    *
-   * @param jobName {string} - Name associated with job (and related job worker).
+   * @param jobName {string|null} - Name associated with job (and related job worker).
    */
   flushQueue(jobName = null) {
-
     if (jobName) {
-
       this.realm.write(() => {
-
         let jobs = Array.from(this.realm.objects('Job')
           .filtered('name == "' + jobName + '"'));
 
         if (jobs.length) {
           this.realm.delete(jobs);
         }
-
       });
-
     } else {
       this.realm.write(() => {
-
         this.realm.deleteAll();
-
       });
     }
-
   }
-
-
 }
 
 /**
@@ -435,10 +396,8 @@ export class Queue {
  * @return {Queue} - A queue instance.
  */
 export default async function queueFactory() {
-
   const queue = new Queue();
   await queue.init();
 
   return queue;
-
 }
