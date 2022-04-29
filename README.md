@@ -3,7 +3,7 @@
 # React Native Queue
 #### Simple. Powerful. Persistent.
 
-[![Node.js CI](https://github.com/sourcetoad/react-native-queue/master/workflows/build.yml/badge.svg)](https://github.com/sourcetoad/react-native-queue/master/workflows/build.yml)
+[![Node.js CI](https://github.com/sourcetoad/react-native-queue/actions/workflows/build.yml/badge.svg)](https://github.com/sourcetoad/react-native-queue/actions/workflows/build.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/sourcetoad/react-native-queue/blob/master/LICENSE)
 
 A React Native at-least-once priority job queue / task queue backed by persistent Realm storage. Jobs will persist until completed, even if user closes and re-opens app. React Native Queue is easily integrated into OS background processes (services) so you can ensure the queue will continue to process until all jobs are completed even if app isn't in focus. It also plays well with Workers so your jobs can be thrown on the queue, then processed in dedicated worker threads for greatly improved processing performance.
