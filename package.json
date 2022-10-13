@@ -26,7 +26,7 @@
   "homepage": "https://github.com/sourcetoad/react-native-queue#readme",
   "dependencies": {
     "promise-reflect": "^1.1.0",
-    "react-native-uuid": "^1.4.9",
+    "react-native-uuid": "^2.0.1",
     "realm": "^10.21.1"
   },
   "devDependencies": {
