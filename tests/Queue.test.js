@@ -731,8 +731,11 @@ describe('Models/Queue', function() {
 
     const jobs = await queue.getJobs(true);
 
+    const jobTest = JSON.stringify(jobs[0]);
+    const jobParsed = JSON.parse(jobTest);
+
     // Check job has default values.
-    jobs[0].should.have.properties({
+    jobParsed.should.have.properties({
       name: jobName,
       payload: JSON.stringify({}),
       data: JSON.stringify({attempts: 1}),
@@ -755,8 +758,10 @@ describe('Models/Queue', function() {
     queue.status.should.equal('inactive');
 
     const jobs = await queue.getJobs(true);
+    const jobTest = JSON.stringify(jobs[0]);
+    const parsedJob = JSON.parse(jobTest);
 
-    jobs[0].should.have.properties({
+    parsedJob.should.have.properties({
       name: jobName,
       payload: JSON.stringify(payload),
       data: JSON.stringify({attempts: jobOptions.attempts}),
