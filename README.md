@@ -1,6 +1,8 @@
 <img src="/docs/logo.png" alt="React Native Queue"/>
 
 # React Native Queue
+_Forked from [billmalarky/react-native-queue](https://github.com/billmalarky/react-native-queue) as appears abandoned in 2018. Keeping up to date until we no longer use it._
+
 #### Simple. Powerful. Persistent.
 
 [![Node.js CI](https://github.com/sourcetoad/react-native-queue/actions/workflows/build.yml/badge.svg)](https://github.com/sourcetoad/react-native-queue/actions/workflows/build.yml)
