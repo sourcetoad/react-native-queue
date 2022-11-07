@@ -324,6 +324,7 @@ export class Queue {
     } catch (error) {
       // Handle job failure logic, including retries.
       let jobData = JSON.parse(job.data);
+      const errorMessage = error?.message || '';
 
       this.realm.write(() => {
         // Increment failed attempts number
@@ -335,9 +336,9 @@ export class Queue {
 
         // Log error
         if (!jobData.errors) {
-          jobData.errors = [ error.message ];
+          jobData.errors = [ errorMessage ];
         } else {
-          jobData.errors.push(error.message);
+          jobData.errors.push(errorMessage);
         }
 
         job.data = JSON.stringify(jobData);
