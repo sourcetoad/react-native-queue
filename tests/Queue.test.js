@@ -1,5 +1,5 @@
 // Define globals for eslint.
-/* global describe it beforeEach process jest */
+/* global describe it beforeEach afterEach process jest */
 
 // Load dependencies
 import should from 'should'; // eslint-disable-line no-unused-vars
@@ -13,10 +13,15 @@ describe('Models/Queue', function() {
     queue.flushQueue();
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   //
   // QUEUE LIFESPAN TESTING
   //
   it('#start(lifespan) queue with lifespan does not process jobs that have no timeout set.', async () => {
+    jest.useFakeTimers();
     const queue = await QueueFactory();
     const jobName = 'job-name';
 
@@ -40,12 +45,14 @@ describe('Models/Queue', function() {
     // wait a tick
     await new Promise((resolve) => {
       setTimeout(resolve, 0);
+      jest.advanceTimersByTime(0);
     });
 
     queue.status.should.equal('inactive');
   });
 
   it('#start(lifespan) FUNDAMENTAL TEST (queue started with lifespan will process a job with job timeout set).', async () => {
+    jest.useFakeTimers();
     const queue = await QueueFactory();
     queue.flushQueue();
     const jobName = 'job-name';
@@ -56,6 +63,11 @@ describe('Models/Queue', function() {
     queue.addWorker(jobName, async (id, payload) => {
       // Track jobs that exec
       executedJobs.push(payload.trackingName);
+
+      await new Promise((resolve) => {
+        setTimeout(resolve, 100);
+        jest.advanceTimersByTime(100);
+      });
     });
 
     // Create a job but don't auto-start queue
@@ -75,16 +87,24 @@ describe('Models/Queue', function() {
     // wait a bit for queue to process job
     await new Promise((resolve) => {
       setTimeout(resolve, 750);
+      jest.advanceTimersByTime(750);
     });
 
     //Check that the correct jobs executed.
     executedJobs.should.deepEqual(['job-name']);
+
+    // switch to real timers so we can get the updated queue value
+    jest.useRealTimers();
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
 
     // Queue should have stopped.
     queue.status.should.equal('inactive');
   });
 
   it('#start(lifespan) BASIC TEST (One job type, default job/worker options): queue will process jobs with timeout set as expected until lifespan ends.', async () => {
+    jest.useFakeTimers();
     // This test will intermittently fail in CI environments like travis-ci.
     // Intermittent failure is a result of the poor performance of CI environments
     // causing the timeouts in this test to become really flakey (setTimeout can't
@@ -123,6 +143,7 @@ describe('Models/Queue', function() {
 
       await new Promise((resolve) => {
         setTimeout(resolve, payload.payloadTimeout);
+        jest.advanceTimersByTime(payload.payloadOptionsTimeout);
       });
     }, { concurrency: 1});
 
@@ -141,7 +162,7 @@ describe('Models/Queue', function() {
     // in order to control the order jobs come off the queue (since they are time sorted)
     // If multiple jobs are written in the same ms, Realm can't be deterministic about job
     // ordering when we pop jobs off the top of the queue.
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(jobName, {
       trackingName: 'job2',
@@ -150,7 +171,7 @@ describe('Models/Queue', function() {
     }, {
       timeout: 300
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(jobName, {
       trackingName: 'job3',
@@ -159,7 +180,7 @@ describe('Models/Queue', function() {
     }, {
       timeout: 1100
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(jobName, {
       trackingName: 'job4',
@@ -168,7 +189,7 @@ describe('Models/Queue', function() {
     }, {
       timeout: 600
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(jobName, {
       trackingName: 'job5',
@@ -177,7 +198,7 @@ describe('Models/Queue', function() {
     }, {
       timeout: 75
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(jobName, {
       trackingName: 'job6',
@@ -186,7 +207,7 @@ describe('Models/Queue', function() {
     }, {
       timeout: 100
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(jobName, {
       trackingName: 'job7',
@@ -195,7 +216,7 @@ describe('Models/Queue', function() {
     }, {
       timeout: 1200
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     // startQueue is false so queue should not have started.
     queue.status.should.equal('inactive');
@@ -236,6 +257,7 @@ describe('Models/Queue', function() {
   });
 
   it('#start(lifespan) ADVANCED TEST FULL (Multiple job names, job timeouts, concurrency, priority) - ONLY RUN IN NON-CI ENV: queue will process jobs with timeout set as expected until lifespan ends.', async () => {
+    jest.useFakeTimers();
     // This test will intermittently fail in CI environments like travis-ci.
     // Intermittent failure is a result of the poor performance of CI environments
     // causing the timeouts in this test to become really flakey (setTimeout can't
@@ -277,6 +299,7 @@ describe('Models/Queue', function() {
 
       await new Promise((resolve) => {
         setTimeout(resolve, payload.payloadTimeout);
+        jest.advanceTimersByTime(payload.payloadTimeout);
       });
 
     }, { concurrency: 1});
@@ -294,6 +317,7 @@ describe('Models/Queue', function() {
 
       await new Promise((resolve) => {
         setTimeout(resolve, payload.payloadTimeout);
+        jest.advanceTimersByTime(payload.payloadTimeout);
       });
     }, { concurrency: 1});
 
@@ -310,6 +334,13 @@ describe('Models/Queue', function() {
 
       await new Promise((resolve) => {
         setTimeout(resolve, payload.payloadTimeout);
+
+        // use the payloadOptionsTimeout if timeout exceeds the max queue lifespan
+        if (payload.trackingName === 'job6-timeout-job-name-payloadTimeout(10000)-timeout(500)-priority(0)') {
+          jest.advanceTimersByTime(payload.payloadOptionsTimeout);
+        } else {
+          jest.advanceTimersByTime(payload.payloadTimeout);
+        }
       });
     }, { concurrency: 1});
 
@@ -330,6 +361,13 @@ describe('Models/Queue', function() {
 
       await new Promise((resolve) => {
         setTimeout(resolve, payload.payloadTimeout);
+        // Since these all run concurrently, only subtract the job with the longest
+        // timeout that will presumably finish last.
+        if (payload.trackingName === 'job11-concurrent-job-name-payloadTimeout(600)-timeout(700)-priority(0)') {
+          jest.advanceTimersByTime(600);
+        } else {
+          jest.advanceTimersByTime(0);
+        }
       });
 
     }, { concurrency: 4});
@@ -348,7 +386,7 @@ describe('Models/Queue', function() {
     // in order to control the order jobs come off the queue (since they are time sorted)
     // If multiple jobs are written in the same ms, Realm can't be deterministic about job
     // ordering when we pop jobs off the top of the queue.
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(anotherJobName, {
       trackingName: 'job2-another-job-name-payloadTimeout(1000)-timeout(1100)-priority(0)',
@@ -357,7 +395,7 @@ describe('Models/Queue', function() {
     }, {
       timeout: 1100
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(anotherJobName, {
       trackingName: 'job3-another-job-name-payloadTimeout(750)-timeout(800)-priority(10)',
@@ -367,7 +405,7 @@ describe('Models/Queue', function() {
       timeout: 800,
       priority: 10
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(jobName, {
       trackingName: 'job4-job-name-payloadTimeout(10000)-timeout(10100)-priority(0)',
@@ -376,7 +414,7 @@ describe('Models/Queue', function() {
     }, {
       timeout: 10100
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(jobName, {
       trackingName: 'job5-job-name-payloadTimeout(400)-timeout(500)-priority(0)',
@@ -385,7 +423,7 @@ describe('Models/Queue', function() {
     }, {
       timeout: 500
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(timeoutJobName, {
       trackingName: 'job6-timeout-job-name-payloadTimeout(10000)-timeout(500)-priority(0)',
@@ -394,7 +432,7 @@ describe('Models/Queue', function() {
     }, {
       timeout: 500
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(jobName, {
       trackingName: 'job7-job-name-payloadTimeout(1000)-timeout(1100)-priority(1)',
@@ -404,7 +442,7 @@ describe('Models/Queue', function() {
       timeout: 1100,
       priority: 1
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     // Create concurrent jobs
     queue.createJob(concurrentJobName, {
@@ -415,7 +453,7 @@ describe('Models/Queue', function() {
       timeout: 600,
       priority: 0
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(concurrentJobName, {
       trackingName: 'job9-concurrent-job-name-payloadTimeout(510)-timeout(600)-priority(0)',
@@ -425,7 +463,7 @@ describe('Models/Queue', function() {
       timeout: 600,
       priority: 0
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(concurrentJobName, {
       trackingName: 'job10-concurrent-job-name-payloadTimeout(10000)-timeout(10100)-priority(0)', // THIS JOB WILL BE SKIPPED BY getConcurrentJobs() due to timeout too long.
@@ -435,7 +473,7 @@ describe('Models/Queue', function() {
       timeout: 10100,
       priority: 0
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(concurrentJobName, {
       trackingName: 'job11-concurrent-job-name-payloadTimeout(600)-timeout(700)-priority(0)',
@@ -445,7 +483,7 @@ describe('Models/Queue', function() {
       timeout: 700,
       priority: 0
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(jobName, {
       trackingName: 'job12-job-name-payloadTimeout(100)-timeout(200)-priority(0)',
@@ -454,7 +492,7 @@ describe('Models/Queue', function() {
     }, {
       timeout: 200
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(jobName, {
       trackingName: 'job13-job-name-payloadTimeout(400)-timeout(500)-priority(0)', // THIS JOB WON'T BE RUN BECAUSE THE TIMEOUT IS 500 AND ONLY 950ms left by this pount. 950 - 500 = 450 and 500 remaining is min for job to be pulled.
@@ -463,7 +501,7 @@ describe('Models/Queue', function() {
     }, {
       timeout: 500
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(jobName, {
       trackingName: 'job14-job-name-payloadTimeout(100)-timeout(200)-priority(0)',
@@ -472,7 +510,7 @@ describe('Models/Queue', function() {
     }, {
       timeout: 200
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
+    await new Promise((resolve) => { setTimeout(resolve, 25); jest.advanceTimersByTime(25); });
 
     queue.createJob(jobName, {
       trackingName: 'job15-job-name-payloadTimeout(500)-timeout(600)-priority(0)', // THIS JOB WON'T BE RUN BECAUSE out of time!
@@ -481,7 +519,6 @@ describe('Models/Queue', function() {
     }, {
       timeout: 600
     }, false);
-    await new Promise((resolve) => { setTimeout(resolve, 25); });
 
     // startQueue is false so queue should not have started.
     queue.status.should.equal('inactive');
@@ -537,7 +574,7 @@ describe('Models/Queue', function() {
       'job15-job-name-payloadTimeout(500)-timeout(600)-priority(0)'
     ]);
 
-  }, 10000); // Increase timeout of this advanced test to 10 seconds.
+  });
 
   it('#start(lifespan) "Zero lifespanRemaining" edge case #1 is properly handled.', async () => {
     // Mock Date.now()
@@ -575,52 +612,52 @@ describe('Models/Queue', function() {
     jobs.length.should.equal(1);
   });
 
-  it('#start(lifespan) "Zero lifespanRemaining" edge case #2 is properly handled.', async () => {
-    // Mock Date.now()
-    Date.now = jest.fn();
-    Date.now.mockReturnValueOnce(0);
-    Date.now.mockReturnValueOnce(500);
-    Date.now.mockReturnValueOnce(2000);
-
+  it('#start() should start queue.', async () => {
+    jest.useFakeTimers();
     const queue = await QueueFactory();
     const jobName = 'job-name';
-    let counter = 0;
+    const payload = { data: 'example-data' };
+    const jobOptions = { priority: 4, timeout: 3000, attempts: 3};
+
+    let counter = 0; // Incrementing this will be our job "work".
 
     queue.addWorker(jobName, () => {
       counter++;
     });
 
-    // Create jobs
-    queue.createJob(jobName, {}, {
-      timeout: 100 // Timeout must be set to test that job still isn't grabbed during "zero lifespanRemaining" edge case.
-    }, false);
-
-    await new Promise((resolve) => { setTimeout(resolve, 25); }); // Space out inserts so time sorting is deterministic.
-
-    queue.createJob(jobName, {
-      testIdentifier: 'this is 2nd job'
-    }, {
-      timeout: 100 // Timeout must be set to test that job still isn't grabbed during "zero lifespanRemaining" edge case.
-    }, false);
+    // Create a couple jobs
+    queue.createJob(jobName, payload, jobOptions, false);
+    queue.createJob(jobName, payload, jobOptions, false);
 
     // startQueue is false so queue should not have started.
     queue.status.should.equal('inactive');
+    queue.start();
+    queue.status.should.equal('active');
 
-    // Start queue, don't await so this test can continue while queue processes.
-    await queue.start(2000);
+    // Give queue 1000ms to churn through all the jobs.
+    await new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(true);
+      }, 1000);
 
-    // Queue should be inactive again.
+      jest.advanceTimersByTime(1000);
+    });
+
+    // switch to real timers so we can get the updated queue value
+    jest.useRealTimers();
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
+
+    // Queue should be finished with no jobs left.
     queue.status.should.equal('inactive');
 
-    // Since we skipped first "zero lifespanRemaining" edge case, one job should
-    // be processed. However since we hit 2nd "zero lifespanRemaining" edge case,
-    // second job should never be pulled off queue and so second job should still exist.
-    counter.should.equal(1);
-
     const jobs = await queue.getJobs(true);
-    const jobPayload = JSON.parse(jobs[0].payload);
 
-    jobPayload.testIdentifier.should.equal('this is 2nd job');
+    jobs.length.should.equal(0);
+
+    // Counter should be updated to reflect worker execution.
+    counter.should.equal(2);
   });
 
   //
@@ -788,6 +825,7 @@ describe('Models/Queue', function() {
   });
 
   it('#start() should start queue.', async () => {
+    jest.useFakeTimers();
     const queue = await QueueFactory();
     const jobName = 'job-name';
     const payload = { data: 'example-data' };
@@ -813,6 +851,14 @@ describe('Models/Queue', function() {
       setTimeout(() => {
         resolve(true);
       }, 1000);
+
+      jest.advanceTimersByTime(1000);
+    });
+
+    // switch to real timers so we can get the updated queue value
+    jest.useRealTimers();
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
     });
 
     // Queue should be finished with no jobs left.
@@ -827,6 +873,7 @@ describe('Models/Queue', function() {
   });
 
   it('#start() called when queue is already active should NOT fire up a concurrent queue.', async () => {
+    jest.useFakeTimers();
     const queue = await QueueFactory();
     const jobName = 'job-name';
     const payload = { data: 'example-data' };
@@ -837,6 +884,8 @@ describe('Models/Queue', function() {
       // Make queue take some time to process.
       await new Promise( resolve => {
         setTimeout(resolve, 1000);
+
+        jest.advanceTimersByTime(1000);
       });
     });
 
@@ -1303,6 +1352,7 @@ describe('Models/Queue', function() {
   });
 
   it('#processJob() handles a job timeout as expected', async () => {
+    jest.useFakeTimers();
     const queue = await QueueFactory();
     const jobName = 'job-name';
     const jobOptions = { priority: 0, timeout: 500, attempts: 1};
@@ -1312,6 +1362,8 @@ describe('Models/Queue', function() {
         setTimeout(() => {
           resolve(true);
         }, 2000);
+
+        jest.advanceTimersByTime(2000);
       });
     });
 
@@ -1410,6 +1462,7 @@ describe('Models/Queue', function() {
   ////
 
   it('onStart lifecycle callback fires before job begins processing.', async () => {
+    jest.useFakeTimers();
     // This test will intermittently fail in CI environments like travis-ci.
     // Intermittent failure is a result of the poor performance of CI environments
     // causing the timeouts in this test to become really flakey (setTimeout can't
@@ -1433,6 +1486,8 @@ describe('Models/Queue', function() {
           jobProcessed = true;
           resolve();
         }, 0);
+
+        jest.advanceTimersByTime(0);
       });
     }, {
       onStart: () => {
@@ -1455,6 +1510,7 @@ describe('Models/Queue', function() {
   });
 
   it('onSuccess, onComplete lifecycle callbacks fire after job begins processing.', async () => {
+    jest.useFakeTimers();
     // This test will intermittently fail in CI environments like travis-ci.
     // Intermittent failure is a result of the poor performance of CI environments
     // causing the timeouts in this test to become really flakey (setTimeout can't
@@ -1480,6 +1536,8 @@ describe('Models/Queue', function() {
           jobProcessed = true;
           resolve();
         }, 300);
+
+        jest.advanceTimersByTime(300);
       });
 
     }, {
@@ -1518,6 +1576,7 @@ describe('Models/Queue', function() {
   });
 
   it('onFailure, onFailed lifecycle callbacks fire after job begins processing.', async () => {
+    jest.useFakeTimers();
     // This test will intermittently fail in CI environments like travis-ci.
     // Intermittent failure is a result of the poor performance of CI environments
     // causing the timeouts in this test to become really flakey (setTimeout can't
@@ -1540,6 +1599,8 @@ describe('Models/Queue', function() {
           jobProcessStarted = true;
           reject(new Error('Job failed.'));
         }, 300);
+
+        jest.advanceTimersByTime(300);
       });
 
     }, {
@@ -1570,6 +1631,7 @@ describe('Models/Queue', function() {
   });
 
   it('onFailure, onFailed lifecycle callbacks work as expected.', async () => {
+    jest.useFakeTimers();
     const queue = await QueueFactory();
     queue.flushQueue();
     const jobName = 'job-name';
@@ -1584,6 +1646,8 @@ describe('Models/Queue', function() {
           jobAttemptCounter++;
           reject(new Error('Job failed.'));
         }, 0);
+
+        jest.advanceTimersByTime(0);
       });
     }, {
       onFailure: () => {
@@ -1609,6 +1673,7 @@ describe('Models/Queue', function() {
   });
 
   it('onComplete fires only once on job with multiple attempts that ends in success.', async () => {
+    jest.useFakeTimers();
     const queue = await QueueFactory();
     queue.flushQueue();
     const jobName = 'job-name';
@@ -1628,6 +1693,8 @@ describe('Models/Queue', function() {
           setTimeout(() => {
             reject(new Error('Job failed.'));
           }, 0);
+
+          jest.advanceTimersByTime(0);
         });
       } else {
         // Simulate work that succeeds
@@ -1635,6 +1702,8 @@ describe('Models/Queue', function() {
           setTimeout(() => {
             resolve();
           }, 0);
+
+          jest.advanceTimersByTime(0);
         });
       }
     }, {
@@ -1663,6 +1732,7 @@ describe('Models/Queue', function() {
   });
 
   it('onComplete fires only once on job with multiple attempts that ends in failure.', async () => {
+    jest.useFakeTimers();
     const queue = await QueueFactory();
     queue.flushQueue();
     const jobName = 'job-name';
@@ -1680,6 +1750,8 @@ describe('Models/Queue', function() {
         setTimeout(() => {
           reject(new Error('Job failed.'));
         }, 0);
+
+        jest.advanceTimersByTime(0);
       });
     }, {
       onFailure: () => {
@@ -1707,6 +1779,7 @@ describe('Models/Queue', function() {
   });
 
   it('onStart, onSuccess, onComplete Job lifecycle callbacks do not block job processing.', async () => {
+    jest.useFakeTimers();
     const queue = await QueueFactory();
     queue.flushQueue();
     const jobName = 'job-name';
@@ -1720,6 +1793,8 @@ describe('Models/Queue', function() {
         workTracker.push(payload.random);
         tracker.push('job processed');
         setTimeout(resolve, 0);
+
+        jest.advanceTimersByTime(0);
       });
     }, {
 
@@ -1784,6 +1859,7 @@ describe('Models/Queue', function() {
   });
 
   it('onFailure, onFailed Job lifecycle callbacks do not block job processing.', async () => {
+    jest.useFakeTimers();
     const queue = await QueueFactory();
     queue.flushQueue();
     const jobName = 'job-name';
@@ -1798,6 +1874,8 @@ describe('Models/Queue', function() {
           tracker.push('job attempted');
           reject(new Error('job failed'));
         }, 0);
+
+        jest.advanceTimersByTime(0);
       });
     }, {
       onFailure: async () => {
