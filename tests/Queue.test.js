@@ -612,52 +612,52 @@ describe('Models/Queue', function() {
     jobs.length.should.equal(1);
   });
 
-  it('#start() should start queue.', async () => {
-    jest.useFakeTimers();
+  it('#start(lifespan) "Zero lifespanRemaining" edge case #2 is properly handled.', async () => {
+    // Mock Date.now()
+    Date.now = jest.fn();
+    Date.now.mockReturnValueOnce(0);
+    Date.now.mockReturnValueOnce(500);
+    Date.now.mockReturnValueOnce(2000);
+
     const queue = await QueueFactory();
     const jobName = 'job-name';
-    const payload = { data: 'example-data' };
-    const jobOptions = { priority: 4, timeout: 3000, attempts: 3};
-
-    let counter = 0; // Incrementing this will be our job "work".
+    let counter = 0;
 
     queue.addWorker(jobName, () => {
       counter++;
     });
 
-    // Create a couple jobs
-    queue.createJob(jobName, payload, jobOptions, false);
-    queue.createJob(jobName, payload, jobOptions, false);
+    // Create jobs
+    queue.createJob(jobName, {}, {
+      timeout: 100 // Timeout must be set to test that job still isn't grabbed during "zero lifespanRemaining" edge case.
+    }, false);
+
+    await new Promise((resolve) => { setTimeout(resolve, 25); }); // Space out inserts so time sorting is deterministic.
+
+    queue.createJob(jobName, {
+      testIdentifier: 'this is 2nd job'
+    }, {
+      timeout: 100 // Timeout must be set to test that job still isn't grabbed during "zero lifespanRemaining" edge case.
+    }, false);
 
     // startQueue is false so queue should not have started.
     queue.status.should.equal('inactive');
-    queue.start();
-    queue.status.should.equal('active');
 
-    // Give queue 1000ms to churn through all the jobs.
-    await new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(true);
-      }, 1000);
+    // Start queue, don't await so this test can continue while queue processes.
+    await queue.start(2000);
 
-      jest.advanceTimersByTime(1000);
-    });
-
-    // switch to real timers so we can get the updated queue value
-    jest.useRealTimers();
-    await new Promise((resolve) => {
-      setTimeout(resolve, 0);
-    });
-
-    // Queue should be finished with no jobs left.
+    // Queue should be inactive again.
     queue.status.should.equal('inactive');
 
+    // Since we skipped first "zero lifespanRemaining" edge case, one job should
+    // be processed. However since we hit 2nd "zero lifespanRemaining" edge case,
+    // second job should never be pulled off queue and so second job should still exist.
+    counter.should.equal(1);
+
     const jobs = await queue.getJobs(true);
+    const jobPayload = JSON.parse(jobs[0].payload);
 
-    jobs.length.should.equal(0);
-
-    // Counter should be updated to reflect worker execution.
-    counter.should.equal(2);
+    jobPayload.testIdentifier.should.equal('this is 2nd job');
   });
 
   //
