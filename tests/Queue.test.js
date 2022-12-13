@@ -1,5 +1,5 @@
 // Define globals for eslint.
-/* global describe it beforeEach afterEach process jest */
+/* global describe it beforeEach afterEach jest */
 
 // Load dependencies
 import should from 'should'; // eslint-disable-line no-unused-vars
