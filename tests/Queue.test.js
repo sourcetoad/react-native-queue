@@ -105,14 +105,6 @@ describe('Models/Queue', function() {
 
   it('#start(lifespan) BASIC TEST (One job type, default job/worker options): queue will process jobs with timeout set as expected until lifespan ends.', async () => {
     jest.useFakeTimers();
-    // This test will intermittently fail in CI environments like travis-ci.
-    // Intermittent failure is a result of the poor performance of CI environments
-    // causing the timeouts in this test to become really flakey (setTimeout can't
-    // guarantee exact time of function execution, and in a high load env execution can
-    // be significantly delayed.
-    if (process.env.CI === true) {
-      return true;
-    }
 
     const queue = await QueueFactory();
     queue.flushQueue();
@@ -258,14 +250,6 @@ describe('Models/Queue', function() {
 
   it('#start(lifespan) ADVANCED TEST FULL (Multiple job names, job timeouts, concurrency, priority) - ONLY RUN IN NON-CI ENV: queue will process jobs with timeout set as expected until lifespan ends.', async () => {
     jest.useFakeTimers();
-    // This test will intermittently fail in CI environments like travis-ci.
-    // Intermittent failure is a result of the poor performance of CI environments
-    // causing the timeouts in this test to become really flakey (setTimeout can't
-    // guarantee exact time of function execution, and in a high load env execution can
-    // be significantly delayed.
-    if (process.env.CI === true) {
-      return true;
-    }
 
     const queue = await QueueFactory();
     queue.flushQueue();
@@ -1463,14 +1447,6 @@ describe('Models/Queue', function() {
 
   it('onStart lifecycle callback fires before job begins processing.', async () => {
     jest.useFakeTimers();
-    // This test will intermittently fail in CI environments like travis-ci.
-    // Intermittent failure is a result of the poor performance of CI environments
-    // causing the timeouts in this test to become really flakey (setTimeout can't
-    // guarantee exact time of function execution, and in a high load env execution can
-    // be significantly delayed.
-    if (process.env.CI === true) {
-      return true;
-    }
 
     const queue = await QueueFactory();
     queue.flushQueue();
@@ -1511,14 +1487,6 @@ describe('Models/Queue', function() {
 
   it('onSuccess, onComplete lifecycle callbacks fire after job begins processing.', async () => {
     jest.useFakeTimers();
-    // This test will intermittently fail in CI environments like travis-ci.
-    // Intermittent failure is a result of the poor performance of CI environments
-    // causing the timeouts in this test to become really flakey (setTimeout can't
-    // guarantee exact time of function execution, and in a high load env execution can
-    // be significantly delayed.
-    if (process.env.CI === true) {
-      return true;
-    }
 
     const queue = await QueueFactory();
     queue.flushQueue();
@@ -1577,14 +1545,6 @@ describe('Models/Queue', function() {
 
   it('onFailure, onFailed lifecycle callbacks fire after job begins processing.', async () => {
     jest.useFakeTimers();
-    // This test will intermittently fail in CI environments like travis-ci.
-    // Intermittent failure is a result of the poor performance of CI environments
-    // causing the timeouts in this test to become really flakey (setTimeout can't
-    // guarantee exact time of function execution, and in a high load env execution can
-    // be significantly delayed.
-    if (process.env.CI === true) {
-      return true;
-    }
 
     const queue = await QueueFactory();
     queue.flushQueue();
