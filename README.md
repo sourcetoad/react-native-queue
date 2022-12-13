@@ -53,24 +53,14 @@ Need advanced task functionality like dedicated worker threads or OS services? E
 ## Installation
 
 ```bash
-$ npm install --save react-native-queue
+$ npm install --save @sourcetoad/react-native-queue
 ```
 
 Or
 
 ```bash
-$ yarn add react-native-queue
+$ yarn add @sourcetoad/react-native-queue
 ```
-
-Then, because this package has a depedency on [Realm](https://github.com/realm/realm-js) you will need to link this native package by running:
-
-```bash
-$ react-native link realm
-```
-
-Linking realm **should only be done once**, reinstalling node_modules with npm or yarn does not require running the above command again.
-
-To troubleshoot linking, refer to [the realm installation instructions](https://realm.io/docs/javascript/latest/#getting-started).
 
 ## Basic Usage
 
@@ -84,7 +74,7 @@ Creating and processing jobs consists of:
 4. Starting the queue (note this happens automatically on job creation, but sometimes the queue must be explicitly started such as in a OS background task or on app restart). Queue can be started with a lifespan in order to limit queue processing time.
 
 ```js
-import queueFactory from 'react-native-queue';
+import queueFactory from '@sourcetoad/react-native-queue';
 
 // Of course this line needs to be in the context of an async function, 
 // otherwise use queueFactory.then((queue) => { console.log('add workers and jobs here'); });
@@ -249,7 +239,7 @@ import {
   Button
 } from 'react-native';
 
-import queueFactory from 'react-native-queue';
+import queueFactory from '@sourcetoad/react-native-queue';
 
 export default class App extends Component<{}> {
 
@@ -420,7 +410,7 @@ import {
 } from 'react-native';
 
 import BackgroundTask from 'react-native-background-task'
-import queueFactory from 'react-native-queue';
+import queueFactory from '@sourcetoad/react-native-queue';
 
 BackgroundTask.define(async () => {
 

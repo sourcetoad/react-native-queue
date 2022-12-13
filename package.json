@@ -1,8 +1,17 @@
 {
-  "name": "react-native-queue",
-  "version": "2.0.2",
+  "name": "@sourcetoad/react-native-queue",
+  "version": "2.0.3",
   "description": "A React Native Job Queue",
   "main": "index.js",
+  "files": [
+    "config",
+    "Models",
+    "index.js",
+    "!**/__tests__",
+    "!**/__fixtures__",
+    "!**/__mocks__",
+    "!**/.*"
+  ],
   "scripts": {
     "test": "jest --coverage --detectOpenHandles --forceExit",
     "lint": "eslint ."
