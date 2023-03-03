@@ -36,7 +36,7 @@
   "dependencies": {
     "promise-reflect": "^1.1.0",
     "react-native-uuid": "^2.0.1",
-    "realm": "^11.0.0"
+    "realm": "^11.5.1"
   },
   "devDependencies": {
     "@babel/core": "^7.17.9",
