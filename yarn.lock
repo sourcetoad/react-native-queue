@@ -4223,10 +4223,10 @@ readable-stream@^3.1.1, readable-stream@^3.4.0:
     string_decoder "^1.1.1"
     util-deprecate "^1.0.1"
 
-realm@^11.5.2:
-  version "11.7.0"
-  resolved "https://registry.yarnpkg.com/realm/-/realm-11.7.0.tgz#0d597f83b97f584da73337009e944d0d9f3d6099"
-  integrity sha512-A/nAuwDSZwjb7fkK48kdWqR+mFi2nWHXorrP4EkXYsOuIUxzgMjsxA3DUzlXU8PoFsIF+mbjTgIhifF6mTrAPg==
+realm@^11.10.1:
+  version "11.10.1"
+  resolved "https://registry.yarnpkg.com/realm/-/realm-11.10.1.tgz#a67b96dd01529fd17c985329f6f8f944d692b288"
+  integrity sha512-WIro2gQ2OTixeJTs/vYYyElLkbY8Rkl9tVRGkKelndzy5S1YPsga3ha4DRJ9BNPlMCVpa9eVvW/28wtNBvx9pQ==
   dependencies:
     "@realm/common" "^0.1.4"
     "@realm/network-transport" "^0.7.2"
