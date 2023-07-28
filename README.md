@@ -13,6 +13,7 @@ A React Native at-least-once priority job queue / task queue backed by persisten
 ## Table of Contents
 
 * [Features](#features)
+* [React Native Compatibility](#react-native-compatibility)
 * [Example Use Cases](#example-use-cases)
 * [Installation](#installation)
 * [Basic Usage](#basic-usage)
@@ -31,6 +32,20 @@ A React Native at-least-once priority job queue / task queue backed by persisten
 * **Powerful options:** Easily modify default functionality. Set job timeouts, number of retry attempts, priority, job lifecycle callbacks, and worker concurrency with an options object. Start queue processing with a lifespan to easily meet OS background task time limits.
 * **Persistent Jobs:** Jobs are persisted with Realm. Because jobs persist, you can easily continue to process jobs across app restarts or in OS background tasks until completed or failed (or app is uninstalled).
 * **Powerful Integrations:** React Native Queue was designed to play well with others. The queue quickly integrates with a variety of OS background task and Worker packages so  processing your jobs in a background service or dedicated thread have never been easier.
+
+## React Native Compatibility
+
+At the core this package leverages [Realm](https://github.com/realm/realm-js/blob/main/COMPATIBILITY.md) which maintains its own compatibility. This produces
+an interesting problem as we depend on a package which enforces React Native compatibility, but peer to react native. 
+
+This means it's very crucial to respect to select the proper version and respect the peering.
+
+| Queue Version | Realm Version | React Native | Hermes Support |
+|---------------|---------------|--------------|----------------|
+| 2.2.0         | 11.10.1       | => 0.71.4    | Yes            |
+| 2.1.1         | 11.5.2        | => 0.71.4    | Yes            |
+| 2.1.0         | 11.5.1        | => 0.71.0    | Yes            |
+| 2.0.0         | 10.21.1       | => 0.64.0    | No             |
 
 ## Example Use Cases
 
