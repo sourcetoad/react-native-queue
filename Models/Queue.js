@@ -237,8 +237,23 @@ export class Queue {
       const timeoutUpperBound = (queueLifespanRemaining - 500 > 0) ? queueLifespanRemaining - 499 : 0; // Only get jobs with timeout at least 500ms < queueLifespanRemaining.
 
       const initialQuery = (queueLifespanRemaining)
-        ? '(active == FALSE AND failed == null AND timeout > 0 AND timeout < ' + timeoutUpperBound + ') OR (active == FALSE AND failed == null AND timeout > 0 AND timeout < ' + timeoutUpperBound + ')'
-        : '(active == FALSE AND failed == null) OR (active == TRUE && failed == null)';
+        ? `(active == FALSE                AND
+            session != ${session}          AND
+            failed == null                 AND
+            timeout > 0                    AND
+            timeout < ${timeoutUpperBound})
+          OR (active == FALSE              AND
+            session != ${session}          AND
+            failed == null                 AND
+            timeout > 0                    AND
+            timeout < ${timeoutUpperBound})`
+
+        : `(active == FALSE                AND
+            session != ${session}          AND
+            failed == null)
+          OR (active == TRUE               AND
+            session != ${session}          AND
+            failed == null)`;
 
       let jobs = Array.from(this.realm.objects('Job')
         .filtered(initialQuery)
