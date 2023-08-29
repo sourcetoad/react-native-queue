@@ -100,6 +100,7 @@ export class Queue {
         active: false,
         timeout: (options.timeout >= 0) ? options.timeout : 25000,
         created: new Date(),
+        lastFailed: null,
         failed: null,
         session: null
       });
@@ -239,21 +240,17 @@ export class Queue {
 
       const initialQuery = (queueLifespanRemaining)
         ? `(active == FALSE                AND
-            session != "${session}"        AND
             failed == null                 AND
             timeout > 0                    AND
             timeout < ${timeoutUpperBound})
           OR (active == FALSE              AND
-            session != "${session}"        AND
             failed == null                 AND
             timeout > 0                    AND
             timeout < ${timeoutUpperBound})`
 
         : `(active == FALSE                AND
-            session != "${session}"        AND
             failed == null)
           OR (active == TRUE               AND
-            session != "${session}"        AND
             failed == null)`;
 
       let jobs = Array.from(this.realm.objects('Job')
@@ -268,28 +265,62 @@ export class Queue {
       if (nextJob) {
         const concurrency = this.worker.getConcurrency(nextJob.name);
 
+        const attemptBehavior = this.worker.getAttemptBehavior(nextJob.name);
+
+        const minMsBetweenAttempts = this.worker.getMinimumMillisBetweenAttempts(nextJob.name);
+        let earliestLastFailedTimestamp = new Date();
+        earliestLastFailedTimestamp.setMilliseconds(earliestLastFailedTimestamp.getMilliseconds() - minMsBetweenAttempts);
+
+        // If the worker is configured to attempt failed moves immediately,
+        // then we don't want to filter out jobs that were already attempted
+        // by this session.
+        const attemptFilterPart = () => {
+          switch (attemptBehavior) {
+            case 'immediate':
+              return '';
+            case 'oncePerStart':
+              return `session != "${session}"     AND`;
+            default:
+              return '';
+          }
+        };
+
         const allRelatedJobsQuery = (queueLifespanRemaining)
           ? `(name == "${nextJob.name}"   AND
               active == FALSE             AND
-              session != "${session}"     AND
+              ${attemptFilterPart()}
               failed == null              AND
+              (lastFailed == null
+                OR
+               lastFailed < ${earliestLastFailedTimestamp}) AND
               timeout > 0                 AND
               timeout < ${timeoutUpperBound})
             OR (name == "${nextJob.name}" AND
               active == FALSE             AND
-              session != "${session}"     AND
+              ${attemptFilterPart()}
               failed == null              AND
+              (lastFailed == null
+                OR
+               lastFailed < ${earliestLastFailedTimestamp}) AND
               timeout > 0                 AND
               timeout < ${timeoutUpperBound})`
 
           : `(name == "${nextJob.name}"   AND
               active == FALSE             AND
-              session != "${session}"     AND
+              ${attemptFilterPart()}
+              (lastFailed == null
+                OR
+               lastFailed < ${earliestLastFailedTimestamp}) AND
               failed == null)
             OR (name == "${nextJob.name}" AND
               active == TRUE              AND
-              session != "${session}"     AND
+              ${attemptFilterPart()}
+              (lastFailed == null
+                OR
+               lastFailed < ${earliestLastFailedTimestamp}) AND
               failed == null)`;
+
+        console.log('allRelatedJobsQuery', allRelatedJobsQuery); // eslint-disable-line no-console
 
         const allRelatedJobs = this.realm.objects('Job')
           .filtered(allRelatedJobsQuery)
@@ -364,39 +395,55 @@ export class Queue {
       let jobData = JSON.parse(job.data);
       const errorMessage = error?.message || '';
 
-      this.realm.write(() => {
-        // Increment failed attempts number
-        if (!jobData.failedAttempts) {
-          jobData.failedAttempts = 1;
-        } else {
-          jobData.failedAttempts++;
-        }
+      // Call the optional error profiler from the worker.options to learn what we should
+      // do with this error. If the profiler returns true, we should attempt the job.
+      const failureBehavior = this.worker.getFailureBehavior(jobName);
 
-        // Log error
-        if (!jobData.errors) {
-          jobData.errors = [ errorMessage ];
-        } else {
-          jobData.errors.push(errorMessage);
-        }
+      switch (failureBehavior) {
+        case 'standard':
+          this.realm.write(() => {
+            // Increment failed attempts number
+            if (!jobData.failedAttempts) {
+              jobData.failedAttempts = 1;
+            } else {
+              jobData.failedAttempts++;
+            }
 
-        job.data = JSON.stringify(jobData);
+            // Log error
+            if (!jobData.errors) {
+              jobData.errors = [errorMessage];
+            } else {
+              jobData.errors.push(errorMessage);
+            }
 
-        // Reset active status
-        job.active = false;
+            job.data = JSON.stringify(jobData);
 
-        // Mark job as failed if too many attempts
-        if (jobData.failedAttempts >= jobData.attempts) {
-          job.failed = new Date();
-        }
-      });
+            // Reset active status
+            job.active = false;
 
-      // Execute job onFailure lifecycle callback.
-      this.worker.executeJobLifecycleCallback('onFailure', jobName, jobId, jobPayload);
+            // Use the same date object for both failure times if last failure
+            const now = new Date();
 
-      // If job has failed all attempts execute job onFailed and onComplete lifecycle callbacks.
-      if (jobData.failedAttempts >= jobData.attempts) {
-        this.worker.executeJobLifecycleCallback('onFailed', jobName, jobId, jobPayload);
-        this.worker.executeJobLifecycleCallback('onComplete', jobName, jobId, jobPayload);
+            // Record when this attempt failed
+            job.lastFailed = now;
+
+            // Mark job as failed if too many attempts
+            if (jobData.failedAttempts >= jobData.attempts) {
+              job.failed = now;
+            }
+          });
+
+          // Execute job onFailure lifecycle callback.
+          this.worker.executeJobLifecycleCallback('onFailure', jobName, jobId, jobPayload);
+
+          // If job has failed all attempts execute job onFailed and onComplete lifecycle callbacks.
+          if (jobData.failedAttempts >= jobData.attempts) {
+            this.worker.executeJobLifecycleCallback('onFailed', jobName, jobId, jobPayload);
+            this.worker.executeJobLifecycleCallback('onComplete', jobName, jobId, jobPayload);
+          }
+          break;
+        default:
+          break;
       }
     }
   }

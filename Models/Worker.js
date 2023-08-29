@@ -39,6 +39,9 @@ export default class Worker {
     // Attach options to worker
     worker.options = {
       concurrency: options.concurrency || 1,
+      attemptBehavior: options.attemptBehavior || 'immediate',  // immediate | oncePerStart
+      failureBehavior: options.failureBehavior || 'standard',   // standard | custom
+      minimumMillisBetweenAttempts: options.minimumMillisBetweenAttempts || 0,
       onStart: options.onStart || null,
       onSuccess: options.onSuccess || null,
       onFailure: options.onFailure || null,
@@ -76,6 +79,67 @@ export default class Worker {
     }
 
     return Worker.workers[jobName].options.concurrency;
+  }
+
+  /**
+   * Get the attempt behavior setting for a worker.
+   *
+   * Defaults to standard attempt behavior.
+   *
+   * @param jobName {string} - Name associated with jobs assigned to this worker.
+   * @throws Throws error if no worker is currently assigned to passed in job name.
+   * @return {object}
+   */
+  getAttemptBehavior(jobName) {
+    // If no worker assigned to job name, throw error.
+    if (!Worker.workers[jobName]) {
+      throw new Error('Job ' + jobName + ' does not have a worker assigned to it.');
+    }
+
+    return Worker.workers[jobName].options.attemptBehavior || null;
+  }
+
+  /**
+   * Get the minimum duration (ms) between attempts setting for a worker.
+   *
+   * Defaults to 0.
+   *
+   * @param jobName {string} - Name associated with jobs assigned to this worker.
+   * @throws Throws error if no worker is currently assigned to passed in job name.
+   * @return {number}
+   */
+  getMinimumMillisBetweenAttempts(jobName) {
+    // If no worker assigned to job name, throw error.
+    if (!Worker.workers[jobName]) {
+      throw new Error('Job ' + jobName + ' does not have a worker assigned to it.');
+    }
+
+    let minimum = 0;
+    try {
+      minimum = parseInt(Worker.workers[jobName].options.minimumMillisBetweenAttempts);
+    } catch (error) {
+      console.error(error); // eslint-disable-line no-console
+    }
+
+    return minimum;
+  }
+
+  /**
+   * Get the failure behavior setting for a worker.
+   *
+   * Defaults to standard failure behavior.
+   *
+   * @param jobName {string} - Name associated with jobs assigned to this worker.
+   * @throws Throws error if no worker is currently assigned to passed in job name.
+   * @return {string}
+   */
+  getFailureBehavior(jobName) {
+    // If no worker assigned to job name, throw error.
+    if (!Worker.workers[jobName]) {
+      throw new Error('Job ' + jobName + ' does not have a worker assigned to it.');
+    }
+
+    return Worker.workers[jobName].options.failureBehavior || null;
   }
 
   /**
