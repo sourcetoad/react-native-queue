@@ -253,8 +253,27 @@ export class Queue {
         const concurrency = this.worker.getConcurrency(nextJob.name);
 
         const allRelatedJobsQuery = (queueLifespanRemaining)
-          ? '(name == "'+ nextJob.name +'" AND active == FALSE AND failed == null AND timeout > 0 AND timeout < ' + timeoutUpperBound + ') OR (name == "'+ nextJob.name +'" AND active == FALSE AND failed == null AND timeout > 0 AND timeout < ' + timeoutUpperBound + ')'
-          : '(name == "'+ nextJob.name +'" AND active == FALSE AND failed == null) OR (name == "'+ nextJob.name +'" AND active == TRUE AND failed == null)';
+          ? `(name == "${nextJob.name}"   AND
+              active == FALSE             AND
+              session != ${session}       AND
+              failed == null              AND
+              timeout > 0                 AND
+              timeout < ${timeoutUpperBound})
+            OR (name == "${nextJob.name}" AND
+              active == FALSE             AND
+              session != ${session}       AND
+              failed == null              AND
+              timeout > 0                 AND
+              timeout < ${timeoutUpperBound})`
+
+          : `(name == "${nextJob.name}"   AND
+              active == FALSE             AND
+              session != ${session}       AND
+              failed == null)
+            OR (name == "${nextJob.name}" AND
+              active == TRUE              AND
+              session != ${session}       AND
+              failed == null)`;
 
         const allRelatedJobs = this.realm.objects('Job')
           .filtered(allRelatedJobsQuery)
