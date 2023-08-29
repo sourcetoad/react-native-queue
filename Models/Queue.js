@@ -289,41 +289,33 @@ export class Queue {
           ? `(name == "${nextJob.name}"   AND
               active == FALSE             AND
               ${attemptFilterPart()}
+              (lastFailed == null OR lastFailed <= $0) AND
               failed == null              AND
-              (lastFailed == null
-                OR
-               lastFailed < ${earliestLastFailedTimestamp}) AND
               timeout > 0                 AND
               timeout < ${timeoutUpperBound})
             OR (name == "${nextJob.name}" AND
               active == FALSE             AND
               ${attemptFilterPart()}
+              (lastFailed == null OR lastFailed <= $0) AND
               failed == null              AND
-              (lastFailed == null
-                OR
-               lastFailed < ${earliestLastFailedTimestamp}) AND
               timeout > 0                 AND
               timeout < ${timeoutUpperBound})`
 
           : `(name == "${nextJob.name}"   AND
               active == FALSE             AND
               ${attemptFilterPart()}
-              (lastFailed == null
-                OR
-               lastFailed < ${earliestLastFailedTimestamp}) AND
+              (lastFailed == null OR lastFailed <= $0) AND
               failed == null)
             OR (name == "${nextJob.name}" AND
               active == TRUE              AND
               ${attemptFilterPart()}
-              (lastFailed == null
-                OR
-               lastFailed < ${earliestLastFailedTimestamp}) AND
+              (lastFailed == null OR lastFailed <= $0) AND
               failed == null)`;
 
         console.log('allRelatedJobsQuery', allRelatedJobsQuery); // eslint-disable-line no-console
 
         const allRelatedJobs = this.realm.objects('Job')
-          .filtered(allRelatedJobsQuery)
+          .filtered(allRelatedJobsQuery, earliestLastFailedTimestamp)
           .sorted([['priority', true], ['created', false]]);
 
         let jobsToMarkActive = allRelatedJobs.slice(0, concurrency);
