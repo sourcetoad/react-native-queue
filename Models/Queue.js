@@ -145,13 +145,14 @@ export class Queue {
     const startTime = Date.now();
     let lifespanRemaining = null;
     let concurrentJobs = [];
+    let session = uuid.v4();
 
     if (lifespan !== 0) {
       lifespanRemaining = lifespan - (Date.now() - startTime);
       lifespanRemaining = (lifespanRemaining === 0) ? -1 : lifespanRemaining; // Handle exactly zero lifespan remaining edge case.
-      concurrentJobs = await this.getConcurrentJobs(lifespanRemaining);
+      concurrentJobs = await this.getConcurrentJobs(session, lifespanRemaining);
     } else {
-      concurrentJobs = await this.getConcurrentJobs();
+      concurrentJobs = await this.getConcurrentJobs(session);
     }
 
     while (this.status === 'active' && concurrentJobs.length) {
@@ -168,9 +169,9 @@ export class Queue {
       if (lifespan !== 0) {
         lifespanRemaining = lifespan - (Date.now() - startTime);
         lifespanRemaining = (lifespanRemaining === 0) ? -1 : lifespanRemaining; // Handle exactly zero lifespan remaining edge case.
-        concurrentJobs = await this.getConcurrentJobs(lifespanRemaining);
+        concurrentJobs = await this.getConcurrentJobs(session, lifespanRemaining);
       } else {
-        concurrentJobs = await this.getConcurrentJobs();
+        concurrentJobs = await this.getConcurrentJobs(session);
       }
     }
 
@@ -220,10 +221,11 @@ export class Queue {
    * If queue is running with a lifespan, only jobs with timeouts at least 500ms < than REMAINING lifespan
    * AND a set timeout (ie timeout > 0) will be returned. See Queue.start() for more info.
    *
+   * @param session {uuid} - The unique ID of the queue.start() instance.
    * @param queueLifespanRemaining {number} - The remaining lifespan of the current queue process (defaults to indefinite).
    * @return {promise} - Promise resolves to an array of job(s) to be processed next by the queue.
    */
-  async getConcurrentJobs(queueLifespanRemaining = 0) {
+  async getConcurrentJobs(session, queueLifespanRemaining = 0) {
     let concurrentJobs = [];
 
     this.realm.write(() => {
@@ -268,6 +270,7 @@ export class Queue {
         // Mark concurrent jobs as active
         jobsToMarkActive = jobsToMarkActive.map( job => {
           job.active = true;
+          job.session = session;
         });
 
         // Reselect now-active concurrent jobs by id.
