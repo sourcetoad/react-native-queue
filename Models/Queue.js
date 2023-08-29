@@ -100,7 +100,8 @@ export class Queue {
         active: false,
         timeout: (options.timeout >= 0) ? options.timeout : 25000,
         created: new Date(),
-        failed: null
+        failed: null,
+        session: null
       });
     });
 
@@ -238,21 +239,21 @@ export class Queue {
 
       const initialQuery = (queueLifespanRemaining)
         ? `(active == FALSE                AND
-            session != ${session}          AND
+            session == null                AND
             failed == null                 AND
             timeout > 0                    AND
             timeout < ${timeoutUpperBound})
           OR (active == FALSE              AND
-            session != ${session}          AND
+            session == null                AND
             failed == null                 AND
             timeout > 0                    AND
             timeout < ${timeoutUpperBound})`
 
         : `(active == FALSE                AND
-            session != ${session}          AND
+            session == null                AND
             failed == null)
           OR (active == TRUE               AND
-            session != ${session}          AND
+            session == null                AND
             failed == null)`;
 
       let jobs = Array.from(this.realm.objects('Job')
@@ -270,24 +271,24 @@ export class Queue {
         const allRelatedJobsQuery = (queueLifespanRemaining)
           ? `(name == "${nextJob.name}"   AND
               active == FALSE             AND
-              session != ${session}       AND
+              session == null             AND
               failed == null              AND
               timeout > 0                 AND
               timeout < ${timeoutUpperBound})
             OR (name == "${nextJob.name}" AND
               active == FALSE             AND
-              session != ${session}       AND
+              session == null             AND
               failed == null              AND
               timeout > 0                 AND
               timeout < ${timeoutUpperBound})`
 
           : `(name == "${nextJob.name}"   AND
               active == FALSE             AND
-              session != ${session}       AND
+              session == null             AND
               failed == null)
             OR (name == "${nextJob.name}" AND
               active == TRUE              AND
-              session != ${session}       AND
+              session == null             AND
               failed == null)`;
 
         const allRelatedJobs = this.realm.objects('Job')

@@ -17,7 +17,7 @@ const JobSchema = {
     timeout: 'int', // Job timeout in ms. 0 means no timeout.
     created: 'date', // Job creation timestamp.
     failed: 'date?', // Job failure timestamp (null until failure).
-    session: 'uuid?', // Unique session id for queue.start() instance that pulled the job in.
+    session: 'string?', // Session UUID for queue.start() instance that pulled the job in.
   }
 };
 
