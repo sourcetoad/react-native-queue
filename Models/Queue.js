@@ -312,8 +312,6 @@ export class Queue {
               (lastFailed == null OR lastFailed <= $0) AND
               failed == null)`;
 
-        console.log('allRelatedJobsQuery', allRelatedJobsQuery); // eslint-disable-line no-console
-
         const allRelatedJobs = this.realm.objects('Job')
           .filtered(allRelatedJobsQuery, earliestLastFailedTimestamp)
           .sorted([['priority', true], ['created', false]]);
@@ -323,7 +321,7 @@ export class Queue {
         // Grab concurrent job ids to reselect jobs as marking these jobs as active will remove
         // them from initial selection when write transaction exits.
         // See: https://stackoverflow.com/questions/47359368/does-realm-support-select-for-update-style-read-locking/47363356#comment81772710_47363356
-        const concurrentJobIds = jobsToMarkActive.map( job => job.id);
+        const concurrentJobIds = jobsToMarkActive.map(job => job.id);
 
         // Mark concurrent jobs as active
         jobsToMarkActive = jobsToMarkActive.map( job => {
@@ -332,12 +330,15 @@ export class Queue {
         });
 
         // Reselect now-active concurrent jobs by id.
-        const reselectQuery = concurrentJobIds.map( jobId => 'id == "' + jobId + '"').join(' OR ');
-        const reselectedJobs = Array.from(this.realm.objects('Job')
-          .filtered(reselectQuery)
-          .sorted([['priority', true], ['created', false]]));
+        if (concurrentJobIds.length > 0) {
+          const reselectQuery = concurrentJobIds.map(jobId => 'id == "' + jobId + '"').join(' OR ');
+          console.log(`[RNQ] Reselect query: ${reselectQuery}`);
+          const reselectedJobs = Array.from(this.realm.objects('Job')
+            .filtered(reselectQuery)
+            .sorted([['priority', true], ['created', false]]));
 
-        concurrentJobs = reselectedJobs.slice(0, concurrency);
+          concurrentJobs = reselectedJobs.slice(0, concurrency);
+        }
       }
     });
 
