@@ -230,6 +230,9 @@ export class Queue {
   async getConcurrentJobs(session, queueLifespanRemaining = 0) {
     let concurrentJobs = [];
 
+    const workersArr = this.worker.getWorkersAsArray();
+    if (workersArr.length === 0) return concurrentJobs;
+
     this.realm.write(() => {
       // Get next job from queue.
       let nextJob = null;
@@ -238,19 +241,45 @@ export class Queue {
       // If queueLife
       const timeoutUpperBound = (queueLifespanRemaining - 500 > 0) ? queueLifespanRemaining - 499 : 0; // Only get jobs with timeout at least 500ms < queueLifespanRemaining.
 
+      // Get worker specific minimum time between attempts.
+      let workerFilters;
+      if (workersArr.length > 0) {
+        workerFilters = workersArr.map(worker => {
+          const { name, minimumMillisBetweenAttempts = 0 } = worker;
+          let earliestLastFailed = new Date();
+          earliestLastFailed.setMilliseconds(earliestLastFailed.getMilliseconds() - minimumMillisBetweenAttempts);
+          const realmFilterableDate = earliestLastFailed.toISOString().replace('T', '@').split('.')[0] + ':00';
+          const workerFiler = `
+          (
+            name == "${name}" AND
+            (
+              lastFailed == null OR
+              lastFailed <= ${realmFilterableDate}
+            )
+          )`;
+          return workerFiler;
+        });
+      }
+
       const initialQuery = (queueLifespanRemaining)
-        ? `(active == FALSE                AND
+        ? `
+           (active == FALSE                AND
             failed == null                 AND
+            (${workerFilters?.join(' OR ')}) AND
             timeout > 0                    AND
             timeout < ${timeoutUpperBound})
           OR (active == FALSE              AND
             failed == null                 AND
+            (${workerFilters?.join(' OR ')}) AND
             timeout > 0                    AND
             timeout < ${timeoutUpperBound})`
 
-        : `(active == FALSE                AND
+        : `
+           (active == FALSE                AND
+            (${workerFilters?.join(' OR ')}) AND
             failed == null)
           OR (active == TRUE               AND
+            (${workerFilters?.join(' OR ')}) AND
             failed == null)`;
 
       let jobs = Array.from(this.realm.objects('Job')
@@ -265,55 +294,31 @@ export class Queue {
       if (nextJob) {
         const concurrency = this.worker.getConcurrency(nextJob.name);
 
-        const attemptBehavior = this.worker.getAttemptBehavior(nextJob.name);
-
-        const minMsBetweenAttempts = this.worker.getMinimumMillisBetweenAttempts(nextJob.name);
-        let earliestLastFailedTimestamp = new Date();
-        earliestLastFailedTimestamp.setMilliseconds(earliestLastFailedTimestamp.getMilliseconds() - minMsBetweenAttempts);
-
-        // If the worker is configured to attempt failed moves immediately,
-        // then we don't want to filter out jobs that were already attempted
-        // by this session.
-        const attemptFilterPart = () => {
-          switch (attemptBehavior) {
-            case 'immediate':
-              return '';
-            case 'oncePerStart':
-              return `session != "${session}"     AND`;
-            default:
-              return '';
-          }
-        };
-
         const allRelatedJobsQuery = (queueLifespanRemaining)
           ? `(name == "${nextJob.name}"   AND
               active == FALSE             AND
-              ${attemptFilterPart()}
-              (lastFailed == null OR lastFailed <= $0) AND
+            (${workerFilters?.join(' OR ')}) AND
               failed == null              AND
               timeout > 0                 AND
               timeout < ${timeoutUpperBound})
             OR (name == "${nextJob.name}" AND
               active == FALSE             AND
-              ${attemptFilterPart()}
-              (lastFailed == null OR lastFailed <= $0) AND
+            (${workerFilters?.join(' OR ')}) AND
               failed == null              AND
               timeout > 0                 AND
               timeout < ${timeoutUpperBound})`
 
           : `(name == "${nextJob.name}"   AND
               active == FALSE             AND
-              ${attemptFilterPart()}
-              (lastFailed == null OR lastFailed <= $0) AND
+            (${workerFilters?.join(' OR ')}) AND
               failed == null)
             OR (name == "${nextJob.name}" AND
               active == TRUE              AND
-              ${attemptFilterPart()}
-              (lastFailed == null OR lastFailed <= $0) AND
+            (${workerFilters?.join(' OR ')}) AND
               failed == null)`;
 
         const allRelatedJobs = this.realm.objects('Job')
-          .filtered(allRelatedJobsQuery, earliestLastFailedTimestamp)
+          .filtered(allRelatedJobsQuery)
           .sorted([['priority', true], ['created', false]]);
 
         let jobsToMarkActive = allRelatedJobs.slice(0, concurrency);
@@ -330,15 +335,11 @@ export class Queue {
         });
 
         // Reselect now-active concurrent jobs by id.
-        if (concurrentJobIds.length > 0) {
-          const reselectQuery = concurrentJobIds.map(jobId => 'id == "' + jobId + '"').join(' OR ');
-          console.log(`[RNQ] Reselect query: ${reselectQuery}`);
-          const reselectedJobs = Array.from(this.realm.objects('Job')
-            .filtered(reselectQuery)
-            .sorted([['priority', true], ['created', false]]));
-
-          concurrentJobs = reselectedJobs.slice(0, concurrency);
-        }
+        const reselectQuery = concurrentJobIds.map(jobId => 'id == "' + jobId + '"').join(' OR ');
+        const reselectedJobs = Array.from(this.realm.objects('Job')
+          .filtered(reselectQuery)
+          .sorted([['priority', true], ['created', false]]));
+        concurrentJobs = reselectedJobs.slice(0, concurrency);
       }
     });
 

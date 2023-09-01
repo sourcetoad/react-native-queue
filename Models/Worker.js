@@ -63,6 +63,29 @@ export default class Worker {
   }
 
   /**
+   * Get an array of all registered workers.
+   * Each worker object in the array is the worker options object
+   * with the name property added.
+   *
+   * @returns {Array} - Array of worker options with name property added.
+   */
+  getWorkersAsArray() {
+    return Object.keys(Worker.workers).map(jobName => {
+      return { ...this.getWorkerOptions(jobName), name: jobName };
+    });
+  }
+
+  /**
+   * Get the worker options for a worker by job name.
+   *
+   * @param jobName {string} - Name associated with jobs assigned to this worker.
+   * @returns {Object} worker options object
+   */
+  getWorkerOptions(jobName) {
+    return Worker.workers[jobName].options;
+  }
+
+  /**
    *
    * Get the concurrency setting for a worker.
    *
@@ -79,24 +102,6 @@ export default class Worker {
     }
 
     return Worker.workers[jobName].options.concurrency;
-  }
-
-  /**
-   * Get the attempt behavior setting for a worker.
-   *
-   * Defaults to standard attempt behavior.
-   *
-   * @param jobName {string} - Name associated with jobs assigned to this worker.
-   * @throws Throws error if no worker is currently assigned to passed in job name.
-   * @return {object}
-   */
-  getAttemptBehavior(jobName) {
-    // If no worker assigned to job name, throw error.
-    if (!Worker.workers[jobName]) {
-      throw new Error('Job ' + jobName + ' does not have a worker assigned to it.');
-    }
-
-    return Worker.workers[jobName].options.attemptBehavior || null;
   }
 
   /**
