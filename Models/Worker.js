@@ -36,7 +36,7 @@ export default class Worker {
       throw new Error('Job name and associated worker function must be supplied.');
     }
 
-    const defaultIsJobRunnable = (job) => true;
+    const defaultIsJobRunnable = (job) => ({ runnable: true });
 
     // Attach options to worker
     worker.options = {
