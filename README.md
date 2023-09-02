@@ -27,8 +27,8 @@ A React Native at-least-once priority job queue / task queue backed by persisten
 ## Features
 
 * **Simple API:** Set up job workers and begin creating your jobs in minutes with just two basic API calls
-  * queue.addWorker(name, workerFunction, options = {})  
-  * queue.createJob(name, payload = {}, options = {}, startQueue = true) 
+  * queue.addWorker(name, workerFunction, options = {})
+  * queue.createJob(name, payload = {}, options = {}, startQueue = true)
 * **Powerful options:** Easily modify default functionality. Set job timeouts, number of retry attempts, priority, job lifecycle callbacks, and worker concurrency with an options object. Start queue processing with a lifespan to easily meet OS background task time limits.
 * **Persistent Jobs:** Jobs are persisted with Realm. Because jobs persist, you can easily continue to process jobs across app restarts or in OS background tasks until completed or failed (or app is uninstalled).
 * **Powerful Integrations:** React Native Queue was designed to play well with others. The queue quickly integrates with a variety of OS background task and Worker packages so  processing your jobs in a background service or dedicated thread have never been easier.
@@ -36,7 +36,7 @@ A React Native at-least-once priority job queue / task queue backed by persisten
 ## React Native Compatibility
 
 At the core this package leverages [Realm](https://github.com/realm/realm-js/blob/main/COMPATIBILITY.md) which maintains its own compatibility. This produces
-an interesting problem as we depend on a package which enforces React Native compatibility, but peer to react native. 
+an interesting problem as we depend on a package which enforces React Native compatibility, but peer to react native.
 
 This means it's very crucial to respect to select the proper version and respect the peering.
 
@@ -82,7 +82,7 @@ $ yarn add @sourcetoad/react-native-queue
 React Native Queue is a standard job/task queue built specifically for react native applications. If you have a long-running task, or a large number of tasks, consider turning that task into a job(s) and throwing it/them onto the queue to be processed in the background instead of blocking your UI until task(s) complete.
 
 Creating and processing jobs consists of:
- 
+
 1. Importing and initializing React Native Queue
 2. Registering worker functions (the functions that execute your jobs).
 3. Creating jobs.
@@ -91,7 +91,7 @@ Creating and processing jobs consists of:
 ```js
 import queueFactory from '@sourcetoad/react-native-queue';
 
-// Of course this line needs to be in the context of an async function, 
+// Of course this line needs to be in the context of an async function,
 // otherwise use queueFactory.then((queue) => { console.log('add workers and jobs here'); });
 const queue = await queueFactory();
 
@@ -99,7 +99,7 @@ const queue = await queueFactory();
 queue.addWorker('example-job', async (id, payload) => {
   console.log('EXECUTING "example-job" with id: ' + id);
   console.log(payload, 'payload');
-  
+
   await new Promise((resolve) => {
     setTimeout(() => {
       console.log('"example-job" has completed!');
@@ -112,7 +112,7 @@ queue.addWorker('example-job', async (id, payload) => {
 
 // Example job passes a payload of data to 'example-job' worker.
 // Default settings are used (note the empty options object).
-// Because false is passed, the queue won't automatically start when this job is created, so usually queue.start() 
+// Because false is passed, the queue won't automatically start when this job is created, so usually queue.start()
 // would have to be manually called. However in the final createJob() below we don't pass false so it will start the queue.
 // NOTE: We pass false for example purposes. In most scenarios starting queue on createJob() is perfectly fine.
 queue.createJob('example-job', {
@@ -157,43 +157,70 @@ queue.addWorker() accepts an options object in order to tweak standard functiona
 
 ```js
 queue.addWorker('job-name-here', async (id, payload) => { console.log(id); }, {
-  
+
   // Set max number of jobs for this worker to process concurrently.
   // Defaults to 1.
   concurrency: 5,
-  
+
+  // Sets the behavior of failures on this worker. Possible values are: standard | custom
+  // standard: If a job fails more than the maximum number of attempts, it will be marked as failed.
+  // custom: If a job fails more than the maximum number of attempts, it will be retried if the job
+  // Defaults to standard.
+  failureBehavior: 'standard',
+
+  // Set min number of milliseconds to wait before for this worker will perform another attempt.
+  // Defaults to 0.
+  minimumMillisBetweenAttempts: 1 * 1000,
+
+  // A function that determines if a job is runnable. If the job is not runnable, it will be skipped.
+  // This function should return an object with a "runnable" boolean property and a "reason" string property.
+  // If the job is not runnable, the reason will be passed to the onSkipped callback payload as skippedReason.
+  // Defaults to a function that always returns true.
+  isJobRunnable: (job) => {
+    // In this example we will only allow jobs to run if they are at least 15 seconds old.
+    let reason;
+    const diffSec = Math.floor((new Date().getTime() - new Date(job?.created).getTime()) / 1000);
+    if (diffSec < 15) reason = `Must be at least 15 seconds old. Currently ${diffSec} seconds old.`;
+    return { runnable: diffSec >= 15, reason };
+  },
+
   // JOB LIFECYCLE CALLBACKS
-  
+
   // onStart job callback handler is fired when a job begins processing.
   //
-  // IMPORTANT: Job lifecycle callbacks are executed asynchronously and do not block job processing 
+  // IMPORTANT: Job lifecycle callbacks are executed asynchronously and do not block job processing
   // (even if the callback returns a promise it will not be "awaited" on).
   // As such, do not place any logic in onStart that your actual job worker function will depend on,
   // this type of logic should of course go inside the job worker function itself.
+  onSkipped: async (id, payload) => {
+    const { skippedReason } = payload;
+    console.log('Job "job-name-here" with id ' + id + ' has been skipped because ' + skippedReason);
+  },
+
   onStart: async (id, payload) => {
     console.log('Job "job-name-here" with id ' + id + ' has started processing.');
   },
-  
+
   // onSuccess job callback handler is fired after a job successfully completes processing.
   onSuccess: async (id, payload) => {
     console.log('Job "job-name-here" with id ' + id + ' was successful.');
   },
-  
+
   // onFailure job callback handler is fired after each time a job fails (onFailed also fires if job has reached max number of attempts).
   onFailure: async (id, payload) => {
     console.log('Job "job-name-here" with id ' + id + ' had an attempt end in failure.');
   },
-  
+
   // onFailed job callback handler is fired if job fails enough times to reach max number of attempts.
   onFailed: async (id, payload) => {
     console.log('Job "job-name-here" with id ' + id + ' has failed.');
   },
-  
+
   // onComplete job callback handler fires after job has completed processing successfully or failed entirely.
   onComplete: async (id, payload) => {
     console.log('Job "job-name-here" with id ' + id + ' has completed processing.');
   }
-}); 
+});
 
 ```
 
@@ -207,13 +234,13 @@ queue.createJob('job-name-here', {foo: 'bar'}, {
   // Any int will work, priority 1000 will be processed before priority 10, though this is probably overkill.
   // Defaults to 0.
   priority: 10, // High priority
-  
+
   // Timeout in ms before job is considered failed.
   // Use this setting to kill off hanging jobs that are clogging up
   // your queue, or ensure your jobs finish in a timely manner if you want
   // to execute jobs in OS background tasks.
   //
-  // IMPORTANT: Jobs are required to have a timeout > 0 set in order to be processed 
+  // IMPORTANT: Jobs are required to have a timeout > 0 set in order to be processed
   // by a queue that has been started with a lifespan. As such, if you want to process
   // jobs in an OS background task, you MUST give the jobs a timeout setting.
   //
@@ -221,7 +248,7 @@ queue.createJob('job-name-here', {foo: 'bar'}, {
   //
   // Defaults to 25000.
   timeout: 30000, // Timeout in 30 seconds
-  
+
   // Number of times to attempt a failing job before marking job as failed and moving on.
   // Defaults to 1.
   attempts: 4, // If this job fails to process 4 times in a row, it will be marked as failed.
