@@ -123,7 +123,7 @@ export default class Worker {
 
     const isJobRunnable = Worker.workers[jobName].options.isJobRunnable;
     if (isJobRunnable && typeof isJobRunnable === 'function') {
-      return isJobRunnable(job.id, JSON.parse(job.payload));
+      return isJobRunnable(job);
     };
 
     return { runnable: true };
