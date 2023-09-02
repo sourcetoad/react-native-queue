@@ -36,14 +36,17 @@ export default class Worker {
       throw new Error('Job name and associated worker function must be supplied.');
     }
 
+    const defaultIsJobRunnable = async (id, payload) => true;
+
     // Attach options to worker
     worker.options = {
       concurrency: options.concurrency || 1,
-      attemptBehavior: options.attemptBehavior || 'immediate',  // immediate | oncePerStart
+      isJobRunnable: options.isJobRunnable || defaultIsJobRunnable,
       failureBehavior: options.failureBehavior || 'standard',   // standard | custom
       minimumMillisBetweenAttempts: options.minimumMillisBetweenAttempts || 0,
       onStart: options.onStart || null,
       onSuccess: options.onSuccess || null,
+      onSkipped: options.onSkipped || null,
       onFailure: options.onFailure || null,
       onFailed: options.onFailed || null,
       onComplete: options.onComplete || null
@@ -105,6 +108,28 @@ export default class Worker {
   }
 
   /**
+   *
+   * Call the options.isJobRunnable function if it exists for a worker.
+   *
+   * @param jobName {string} - Name associated with jobs assigned to this worker.
+   * @throws Throws error if no worker is currently assigned to passed in job name.
+   * @return {Object<boolean, string | undefined>}
+   */
+  execIsJobRunnable(jobName, job) {
+    // If no worker assigned to job name, throw error.
+    if (!Worker.workers[jobName]) {
+      throw new Error('Job ' + jobName + ' does not have a worker assigned to it.');
+    }
+
+    const isJobRunnable = Worker.workers[jobName].options.isJobRunnable;
+    if (isJobRunnable && typeof isJobRunnable === 'function') {
+      return isJobRunnable(job.id, JSON.parse(job.payload));
+    };
+
+    return { runnable: true };
+  }
+
+  /**
    * Get the minimum duration (ms) between attempts setting for a worker.
    *
    * Defaults to 0.
@@ -119,14 +144,7 @@ export default class Worker {
       throw new Error('Job ' + jobName + ' does not have a worker assigned to it.');
     }
 
-    let minimum = 0;
-    try {
-      minimum = parseInt(Worker.workers[jobName].options.minimumMillisBetweenAttempts);
-    } catch (error) {
-      console.error(error); // eslint-disable-line no-console
-    }
-
-    return minimum;
+    return parseInt(Worker.workers[jobName].options.minimumMillisBetweenAttempts);
   }
 
   /**
@@ -193,7 +211,7 @@ export default class Worker {
    */
   async executeJobLifecycleCallback(callbackName, jobName, jobId, jobPayload) {
     // Validate callback name
-    const validCallbacks = ['onStart', 'onSuccess', 'onFailure', 'onFailed', 'onComplete'];
+    const validCallbacks = ['onStart', 'onSuccess', 'onSkipped', 'onFailure', 'onFailed', 'onComplete'];
     if (!validCallbacks.includes(callbackName)) {
       throw new Error('Invalid job lifecycle callback name.');
     }

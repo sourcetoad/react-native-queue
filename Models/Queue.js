@@ -231,6 +231,34 @@ export class Queue {
     let concurrentJobs = [];
 
     const workersArr = this.worker.getWorkersAsArray();
+    const workersArrToJSON = () => {
+      return workersArr.map(worker => {
+        let ret = {};
+        const {
+          concurrency,
+          isJobRunnable,
+          failureBehavior,
+          minimumMillisBetweenAttempts,
+          onStart,
+          onSuccess,
+          onFailure,
+          onFailed,
+          onComplete } = worker;
+        if (concurrency) ret.concurrency = typeof concurrency == 'number' ? concurrency : 'undefined';
+        if (isJobRunnable) ret.isJobRunnable = typeof isJobRunnable == 'function' ? 'isJobRunnable()' : 'undefined';
+        if (failureBehavior) ret.failureBehavior = typeof failureBehavior == 'string' ? failureBehavior : 'undefined';
+        if (minimumMillisBetweenAttempts) ret.minimumMillisBetweenAttempts = typeof minimumMillisBetweenAttempts == 'number' ? minimumMillisBetweenAttempts : 'undefined';
+        if (onStart) ret.onStart = typeof onStart == 'function' ? 'onStart()' : 'undefined';
+        if (onSuccess) ret.onSuccess = typeof onSuccess == 'function' ? 'onSuccess()' : 'undefined';
+        if (onFailure) ret.onFailure = typeof onFailure == 'function' ? 'onFailure()' : 'undefined';
+        if (onFailed) ret.onFailed = typeof onFailed == 'function' ? 'onFailed()' : 'undefined';
+        if (onComplete) ret.onComplete = typeof onComplete == 'function' ? 'onComplete()' : 'undefined';
+        return ret;
+      });
+    };
+
+
+    //console.log(`[RNQ] Found ${workersArr.length} workers to process...\n${JSON.stringify(workersArrToJSON(), null, 2)}`);
     if (workersArr.length === 0) return concurrentJobs;
 
     this.realm.write(() => {
@@ -286,6 +314,8 @@ export class Queue {
         .filtered(initialQuery)
         .sorted([['priority', true], ['created', false]]));
 
+      console.log(`[RNQ] Initially found ${jobs?.length} jobs to process.`);
+
       if (jobs.length) {
         nextJob = jobs[0];
       }
@@ -321,7 +351,23 @@ export class Queue {
           .filtered(allRelatedJobsQuery)
           .sorted([['priority', true], ['created', false]]);
 
-        let jobsToMarkActive = allRelatedJobs.slice(0, concurrency);
+        // Filter out any jobs that are not runnable.
+        let runnableJobs = [];
+        for (let index = 0; index < allRelatedJobs.length; index++) {
+          const job = allRelatedJobs[index];
+          const { runnable, reason } = this.worker.execIsJobRunnable(job.name, job);
+          if (runnable) {
+            runnableJobs.push(job);
+          } else {
+            // Fire onSkipped job lifecycle callback
+            const jobPayload = JSON.parse(job.payload);
+            this.worker.executeJobLifecycleCallback('onSkipped', job.name, job.id, {...jobPayload, skippedReason: reason});
+          }
+        }
+
+        console.log(`[RNQ] Only ${runnableJobs?.length} of those jobs are runnable.`);
+
+        let jobsToMarkActive = runnableJobs.slice(0, concurrency);
 
         // Grab concurrent job ids to reselect jobs as marking these jobs as active will remove
         // them from initial selection when write transaction exits.
@@ -335,16 +381,20 @@ export class Queue {
         });
 
         // Reselect now-active concurrent jobs by id.
-        const reselectQuery = concurrentJobIds.map(jobId => 'id == "' + jobId + '"').join(' OR ');
-        const reselectedJobs = Array.from(this.realm.objects('Job')
-          .filtered(reselectQuery)
-          .sorted([['priority', true], ['created', false]]));
-        concurrentJobs = reselectedJobs.slice(0, concurrency);
+        if (concurrentJobIds.length > 0) {
+          const reselectQuery = concurrentJobIds.map(jobId => 'id == "' + jobId + '"').join(' OR ');
+          const reselectedJobs = Array.from(this.realm.objects('Job')
+            .filtered(reselectQuery)
+            .sorted([['priority', true], ['created', false]]));
+          concurrentJobs = reselectedJobs.slice(0, concurrency);
+          console.log(`[RNQ] Found ${concurrentJobs?.length} concurrent jobs to process.`);
+        } else {
+          console.log(`[RNQ] No jobs to process.`);
+        }
       }
     });
 
     return concurrentJobs;
-
   }
 
   /**
