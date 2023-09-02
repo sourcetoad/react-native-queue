@@ -101,8 +101,7 @@ export class Queue {
         timeout: (options.timeout >= 0) ? options.timeout : 25000,
         created: new Date(),
         lastFailed: null,
-        failed: null,
-        session: null
+        failed: null
       });
     });
 
@@ -147,14 +146,13 @@ export class Queue {
     const startTime = Date.now();
     let lifespanRemaining = null;
     let concurrentJobs = [];
-    let session = uuid.v4();
 
     if (lifespan !== 0) {
       lifespanRemaining = lifespan - (Date.now() - startTime);
       lifespanRemaining = (lifespanRemaining === 0) ? -1 : lifespanRemaining; // Handle exactly zero lifespan remaining edge case.
-      concurrentJobs = await this.getConcurrentJobs(session, lifespanRemaining);
+      concurrentJobs = await this.getConcurrentJobs(lifespanRemaining);
     } else {
-      concurrentJobs = await this.getConcurrentJobs(session);
+      concurrentJobs = await this.getConcurrentJobs();
     }
 
     while (this.status === 'active' && concurrentJobs.length) {
@@ -171,9 +169,9 @@ export class Queue {
       if (lifespan !== 0) {
         lifespanRemaining = lifespan - (Date.now() - startTime);
         lifespanRemaining = (lifespanRemaining === 0) ? -1 : lifespanRemaining; // Handle exactly zero lifespan remaining edge case.
-        concurrentJobs = await this.getConcurrentJobs(session, lifespanRemaining);
+        concurrentJobs = await this.getConcurrentJobs(lifespanRemaining);
       } else {
-        concurrentJobs = await this.getConcurrentJobs(session);
+        concurrentJobs = await this.getConcurrentJobs();
       }
     }
 
@@ -220,46 +218,14 @@ export class Queue {
    * worker function that has concurrency X > 1, then X related (jobs with same name)
    * jobs will be returned.
    *
-   * If queue is running with a lifespan, only jobs with timeouts at least 500ms < than REMAINING lifespan
-   * AND a set timeout (ie timeout > 0) will be returned. See Queue.start() for more info.
-   *
-   * @param session {uuid} - The unique ID of the queue.start() instance.
    * @param queueLifespanRemaining {number} - The remaining lifespan of the current queue process (defaults to indefinite).
    * @return {promise} - Promise resolves to an array of job(s) to be processed next by the queue.
    */
-  async getConcurrentJobs(session, queueLifespanRemaining = 0) {
+  async getConcurrentJobs(queueLifespanRemaining = 0) {
     let concurrentJobs = [];
 
     const workersArr = this.worker.getWorkersAsArray();
-    const workersArrToJSON = () => {
-      return workersArr.map(worker => {
-        let ret = {};
-        const {
-          concurrency,
-          isJobRunnable,
-          failureBehavior,
-          minimumMillisBetweenAttempts,
-          onStart,
-          onSuccess,
-          onFailure,
-          onFailed,
-          onComplete } = worker;
-        if (concurrency) ret.concurrency = typeof concurrency == 'number' ? concurrency : 'undefined';
-        if (isJobRunnable) ret.isJobRunnable = typeof isJobRunnable == 'function' ? 'isJobRunnable()' : 'undefined';
-        if (failureBehavior) ret.failureBehavior = typeof failureBehavior == 'string' ? failureBehavior : 'undefined';
-        if (minimumMillisBetweenAttempts) ret.minimumMillisBetweenAttempts = typeof minimumMillisBetweenAttempts == 'number' ? minimumMillisBetweenAttempts : 'undefined';
-        if (onStart) ret.onStart = typeof onStart == 'function' ? 'onStart()' : 'undefined';
-        if (onSuccess) ret.onSuccess = typeof onSuccess == 'function' ? 'onSuccess()' : 'undefined';
-        if (onFailure) ret.onFailure = typeof onFailure == 'function' ? 'onFailure()' : 'undefined';
-        if (onFailed) ret.onFailed = typeof onFailed == 'function' ? 'onFailed()' : 'undefined';
-        if (onComplete) ret.onComplete = typeof onComplete == 'function' ? 'onComplete()' : 'undefined';
-        return ret;
-      });
-    };
-
-
-    //console.log(`[RNQ] Found ${workersArr.length} workers to process...\n${JSON.stringify(workersArrToJSON(), null, 2)}`);
-    if (workersArr.length === 0) return concurrentJobs;
+    if (workersArr.length === 0) return [];
 
     this.realm.write(() => {
       // Get next job from queue.
@@ -314,8 +280,6 @@ export class Queue {
         .filtered(initialQuery)
         .sorted([['priority', true], ['created', false]]));
 
-      console.log(`[RNQ] Initially found ${jobs?.length} jobs to process.`);
-
       if (jobs.length) {
         nextJob = jobs[0];
       }
@@ -365,8 +329,6 @@ export class Queue {
           }
         }
 
-        console.log(`[RNQ] Only ${runnableJobs?.length} of those jobs are runnable.`);
-
         let jobsToMarkActive = runnableJobs.slice(0, concurrency);
 
         // Grab concurrent job ids to reselect jobs as marking these jobs as active will remove
@@ -377,7 +339,6 @@ export class Queue {
         // Mark concurrent jobs as active
         jobsToMarkActive = jobsToMarkActive.map( job => {
           job.active = true;
-          job.session = session;
         });
 
         // Reselect now-active concurrent jobs by id.
@@ -387,9 +348,6 @@ export class Queue {
             .filtered(reselectQuery)
             .sorted([['priority', true], ['created', false]]));
           concurrentJobs = reselectedJobs.slice(0, concurrency);
-          console.log(`[RNQ] Found ${concurrentJobs?.length} concurrent jobs to process.`);
-        } else {
-          console.log(`[RNQ] No jobs to process.`);
         }
       }
     });
