@@ -21,6 +21,7 @@ export class Queue {
     this.realm = null;
     this.worker = new Worker();
     this.status = 'inactive';
+    this.statusChangeObserver = null;
   }
 
   /**
@@ -66,6 +67,42 @@ export class Queue {
   removeWorker(jobName) {
     this.worker.removeWorker(jobName);
   }
+
+  /**
+   * Listen for changes in the queue status (starting and stopping). This method
+   * returns a unsubscribe function to stop listening to events. Always ensure you
+   * unsubscribe from the listener when no longer needed to prevent updates to
+   * components no longer in use.
+   *
+   * #### Example
+   *
+   * ```js
+   * const unsubscribe = queue.onQueueStateChanged((user) => {
+   *   if (user) {
+   *     // Signed in
+   *   } else {
+   *     // Signed out
+   *   }
+   * });
+   *
+   * // Unsubscribe from further state changes
+   * unsubscribe();
+   * ```
+   *
+   * @param listener A listener function which triggers when auth state changed (for example signing out).
+   */
+  onQueueStateChanged(listener) {
+    this.statusChangeObserver = listener;
+    return () => {this.statusChangeObserver = null};
+  }
+
+  changeStatus(status) {
+    this.status = status;
+    if (this.statusChangeObserver) {
+      this.statusChangeObserver(status);
+    }
+  }
+
 
   /**
    *
@@ -140,7 +177,7 @@ export class Queue {
       return false;
     }
 
-    this.status = 'active';
+    this.changeStatus('active');
 
     // Get jobs to process
     const startTime = Date.now();
@@ -175,7 +212,7 @@ export class Queue {
       }
     }
 
-    this.status = 'inactive';
+    this.changeStatus('inactive');
   }
 
   /**
@@ -187,7 +224,7 @@ export class Queue {
    *
    */
   stop() {
-    this.status = 'inactive';
+    this.changeStatus('inactive');
   }
 
   /**
