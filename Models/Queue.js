@@ -201,12 +201,12 @@ export class Queue {
     if (sync) {
       let job = null;
       this.realm.write(() => {
-        job = this.realm.object('Job', id);
+        job = this.realm.objectForPrimaryKey('Job', id);
       });
 
       return job;
     } else {
-      return await this.realm.objects('Job', id);
+      return await this.realm.objectForPrimaryKey('Job', id);
     }
   }
 
