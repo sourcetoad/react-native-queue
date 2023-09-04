@@ -192,6 +192,26 @@ export class Queue {
 
   /**
    *
+   * Get a job by id from the queue.
+   *
+   * @param sync {boolean} - This should be true if you want to guarantee job data is fresh. Otherwise you could receive job data that is not up to date if a write transaction is occuring concurrently.
+   * @return {promise} - Promise that resolves to a collection of all the jobs in the queue.
+   */
+  async getJob(id, sync = false) {
+    if (sync) {
+      let job = null;
+      this.realm.write(() => {
+        job = this.realm.object('Job', id);
+      });
+
+      return job;
+    } else {
+      return await this.realm.objects('Job', id);
+    }
+  }
+
+  /**
+   *
    * Get a collection of all the jobs in the queue.
    *
    * @param sync {boolean} - This should be true if you want to guarantee job data is fresh. Otherwise you could receive job data that is not up to date if a write transaction is occuring concurrently.
