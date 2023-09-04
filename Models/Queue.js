@@ -77,19 +77,15 @@ export class Queue {
    * #### Example
    *
    * ```js
-   * const unsubscribe = queue.onQueueStateChanged((user) => {
-   *   if (user) {
-   *     // Signed in
-   *   } else {
-   *     // Signed out
-   *   }
+   * const unsubscribe = queue.onQueueStateChanged((state) => {
+   *   console.log(`Queue state changed to ${state}`);
    * });
    *
    * // Unsubscribe from further state changes
    * unsubscribe();
    * ```
    *
-   * @param listener A listener function which triggers when auth state changed (for example signing out).
+   * @param listener A listener function which triggers when queue status changed (for example starting).
    */
   onQueueStateChanged(listener) {
     this.statusChangeObserver = listener;
