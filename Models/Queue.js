@@ -92,13 +92,19 @@ export class Queue {
     return () => {this.statusChangeObserver = null};
   }
 
+  /**
+   * A simple wrapper for setting the status of the queue and notifying any
+   * listeners of the change.
+   *
+   * @private
+   * @param {string} status
+   */
   changeStatus(status) {
     this.status = status;
     if (this.statusChangeObserver) {
       this.statusChangeObserver(status);
     }
   }
-
 
   /**
    *
