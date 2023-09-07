@@ -93,6 +93,38 @@ export class Queue {
   }
 
   /**
+   * Listen for changes in the jobs collection such as jobs changing status. This method
+   * returns a unsubscribe function to stop listening to events. Always ensure you
+   * unsubscribe from the listener when no longer needed to prevent updates to
+   * components no longer in use.
+   *
+   * #### Example
+   *
+   * ```js
+   * const unsubscribe = queue.onQueueJobChanged(() => {
+   *  console.log(`A job changed!`);
+   * });
+   *
+   * // Unsubscribe from further state changes
+   * unsubscribe();
+   * ```
+   *
+   * @param listener A listener function which triggers when jobs collection changed.
+   */
+  onQueueJobChanged(listener) {
+    // Add the listener callback to the realm
+    try {
+      this.realm.addListener("change", listener);
+    } catch (error) {
+      console.error(
+        `An exception was thrown within the react native queue change listener: ${error}`
+      );
+    }
+
+    return () => { this.realm.removeListener("change", listener); };
+  }
+
+  /**
    * A simple wrapper for setting the status of the queue and notifying any
    * listeners of the change.
    *
