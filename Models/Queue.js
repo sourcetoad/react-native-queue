@@ -414,8 +414,26 @@ export class Queue {
           if (runnable) {
             runnableJobs.push(job);
           } else {
-            // Fire onSkipped job lifecycle callback
             const jobPayload = JSON.parse(job.payload);
+            let jobData = JSON.parse(job.data);
+
+            // Increment failed attempts number
+            if (!jobData.skippedAttempts) {
+              jobData.skippedAttempts = 1;
+            } else {
+              jobData.skippedAttempts++;
+            }
+
+            // Log skipped reasons
+            if (!jobData.skippedReasons) {
+              jobData.skippedReasons = [reason];
+            } else {
+              jobData.skippedReasons.push(reason);
+            }
+
+            job.data = JSON.stringify(jobData);
+
+            // Fire onSkipped job lifecycle callback
             this.worker.executeJobLifecycleCallback('onSkipped', job.name, job.id, {...jobPayload, skippedReason: reason});
           }
         }
