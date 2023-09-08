@@ -68,13 +68,13 @@ Need advanced task functionality like dedicated worker threads or OS services? E
 ## Installation
 
 ```bash
-$ npm install --save @sourcetoad/react-native-queue
+$ npm install --save hopdrive/react-native-queue
 ```
 
 Or
 
 ```bash
-$ yarn add @sourcetoad/react-native-queue
+$ yarn add hopdrive/react-native-queue
 ```
 
 ## Basic Usage
@@ -89,7 +89,7 @@ Creating and processing jobs consists of:
 4. Starting the queue (note this happens automatically on job creation, but sometimes the queue must be explicitly started such as in a OS background task or on app restart). Queue can be started with a lifespan in order to limit queue processing time.
 
 ```js
-import queueFactory from '@sourcetoad/react-native-queue';
+import queueFactory from 'hopdrive/react-native-queue';
 
 // Of course this line needs to be in the context of an async function,
 // otherwise use queueFactory.then((queue) => { console.log('add workers and jobs here'); });
@@ -281,7 +281,7 @@ import {
   Button
 } from 'react-native';
 
-import queueFactory from '@sourcetoad/react-native-queue';
+import queueFactory from 'hopdrive/react-native-queue';
 
 export default class App extends Component<{}> {
 
@@ -452,7 +452,7 @@ import {
 } from 'react-native';
 
 import BackgroundTask from 'react-native-background-task'
-import queueFactory from '@sourcetoad/react-native-queue';
+import queueFactory from 'hopdrive/react-native-queue';
 
 BackgroundTask.define(async () => {
 
