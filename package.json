@@ -3,6 +3,9 @@
   "version": "2.3.0",
   "description": "A React Native Job Queue",
   "main": "index.js",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/@hopdrive"
+  },
   "files": [
     "config",
     "Models",
