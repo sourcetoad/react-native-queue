@@ -1,5 +1,5 @@
 {
-  "name": "hopdrive/react-native-queue",
+  "name": "@hopdrive/react-native-queue",
   "version": "2.3.0",
   "description": "A React Native Job Queue",
   "main": "index.js",
@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/sourcetoad/react-native-queue/react-native-queue.git"
+    "url": "https://github.com/hopdrive/react-native-queue/react-native-queue.git"
   },
   "keywords": [
     "react",
@@ -30,9 +30,9 @@
   "author": "Reid Mayo",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/sourcetoad/react-native-queue/issues"
+    "url": "https://github.com/hopdrive/react-native-queue/issues"
   },
-  "homepage": "https://github.com/sourcetoad/react-native-queue#readme",
+  "homepage": "https://github.com/hopdrive/react-native-queue#readme",
   "dependencies": {
     "promise-reflect": "^1.1.0",
     "react-native-uuid": "^2.0.1",
