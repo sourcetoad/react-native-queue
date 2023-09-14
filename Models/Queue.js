@@ -69,6 +69,13 @@ export class Queue {
   }
 
   /**
+   * Get all of the registered workers.
+   */
+  getWorkersAsArray() {
+    return this.worker.getWorkersAsArray();
+  }
+
+  /**
    * Listen for changes in the queue status (starting and stopping). This method
    * returns a unsubscribe function to stop listening to events. Always ensure you
    * unsubscribe from the listener when no longer needed to prevent updates to
