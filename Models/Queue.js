@@ -383,6 +383,25 @@ export class Queue {
   }
 
   /**
+   * 
+   * Delete all failed jobs from the queue.
+   * 
+   * 
+   */
+
+  deleteAllFailedJobs() {
+    this.realm.write(() => {
+      let jobs = Array.from(this.realm.objects('Job')
+        .filtered('failed != null'));
+
+      if (jobs.length) {
+        this.realm.delete(jobs);
+      }
+    });
+  }
+
+
+  /**
    *
    * Delete jobs in the queue.
    *
