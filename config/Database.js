@@ -16,7 +16,8 @@ const JobSchema = {
     active: { type: 'bool', default: false}, // Whether or not job is currently being processed.
     timeout: 'int', // Job timeout in ms. 0 means no timeout.
     created: 'date', // Job creation timestamp.
-    failed: 'date?' // Job failure timestamp (null until failure).
+    failed: 'date?', // Job failure timestamp (null until failure).
+    lastFailed: 'date?', // Last job failure timestamp (set after each failed attempt).
   }
 };
 
