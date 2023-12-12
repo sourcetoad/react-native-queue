@@ -364,6 +364,44 @@ export class Queue {
   }
 
   /**
+   * Delete a job from the queue.
+   * 
+   * @param jobId {string} - Unique id associated with job.
+   * 
+   */
+
+  deleteJob(jobId) {
+    this.realm.write(() => {
+      let job = this.realm.objects('Job').filtered('id == "' + jobId + '"');
+
+      if (job.length) {
+        this.realm.delete(job);
+      } else {
+        throw new Error('Job ' + jobId + ' does not exist.');
+      }
+    });
+  }
+
+  /**
+   * 
+   * Delete all failed jobs from the queue.
+   * 
+   * 
+   */
+
+  deleteAllFailedJobs() {
+    this.realm.write(() => {
+      let jobs = Array.from(this.realm.objects('Job')
+        .filtered('failed != null'));
+
+      if (jobs.length) {
+        this.realm.delete(jobs);
+      }
+    });
+  }
+
+
+  /**
    *
    * Delete jobs in the queue.
    *
