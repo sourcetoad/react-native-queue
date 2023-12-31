@@ -28,10 +28,12 @@ export class Queue {
    *
    * Initializes the queue by connecting to Realm database.
    *
+   * Specify an optional options object to override the default realmPath.
+   *
    */
-  async init() {
+  async init(options = {}) {
     if (this.realm === null) {
-      this.realm = await Database.getRealmInstance();
+      this.realm = await Database.getRealmInstance(options);
     }
   }
 
@@ -568,9 +570,9 @@ export class Queue {
 
   /**
    * Delete a job from the queue.
-   * 
+   *
    * @param jobId {string} - Unique id associated with job.
-   * 
+   *
    */
 
   deleteJob(jobId) {
@@ -586,10 +588,10 @@ export class Queue {
   }
 
   /**
-   * 
+   *
    * Delete all failed jobs from the queue.
-   * 
-   * 
+   *
+   *
    */
 
   deleteAllFailedJobs() {
@@ -637,9 +639,9 @@ export class Queue {
  *
  * @return {Queue} - A queue instance.
  */
-export default async function queueFactory() {
+export default async function queueFactory(options = {}) {
   const queue = new Queue();
-  await queue.init();
+  await queue.init(options);
 
   return queue;
 }
