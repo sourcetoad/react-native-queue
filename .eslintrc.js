@@ -1,38 +1,39 @@
+/* eslint-env node */
 module.exports = {
-  "env": {
-    "browser": true,
-    "es6": true
+  'env': {
+    'browser': true,
+    'es6': true
   },
-  "parser": "babel-eslint",
-  "extends": [
-    "eslint:recommended"
+  'parser': 'babel-eslint',
+  'extends': [
+    'eslint:recommended'
   ],
-  "parserOptions": {
-    "sourceType": "module"
+  'parserOptions': {
+    'sourceType': 'module'
   },
-  "rules": {
-    "indent": [
-      "error",
+  'rules': {
+    'indent': [
+      'error',
       2,
-      { "SwitchCase": 1 }
+      { 'SwitchCase': 1 }
     ],
-    "brace-style": [
-      "error",
-      "1tbs",
-      { "allowSingleLine": true }
+    'brace-style': [
+      'error',
+      '1tbs',
+      { 'allowSingleLine': true }
     ],
-    "linebreak-style": [
-      "error",
-      "unix"
+    'linebreak-style': [
+      'error',
+      'unix'
     ],
-    "quotes": [
-      "error",
-      "single"
+    'quotes': [
+      'error',
+      'single'
     ],
-    "semi": [
-      "error",
-      "always"
+    'semi': [
+      'error',
+      'always'
     ],
-    "no-var": "error"
+    'no-var': 'error'
   }
 };
