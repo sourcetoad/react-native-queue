@@ -14,7 +14,8 @@
   ],
   "scripts": {
     "test": "jest --coverage --detectOpenHandles --forceExit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "lint:fix":  "eslint . --fix"
   },
   "repository": {
     "type": "git",
