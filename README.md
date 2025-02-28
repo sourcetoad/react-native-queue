@@ -27,8 +27,8 @@ A React Native at-least-once priority job queue / task queue backed by persisten
 ## Features
 
 * **Simple API:** Set up job workers and begin creating your jobs in minutes with just two basic API calls
-  * queue.addWorker(name, workerFunction, options = {})  
-  * queue.createJob(name, payload = {}, options = {}, startQueue = true) 
+  * queue.addWorker(name, workerFunction, options = {})
+  * queue.createJob(name, payload = {}, options = {}, startQueue = true)
 * **Powerful options:** Easily modify default functionality. Set job timeouts, number of retry attempts, priority, job lifecycle callbacks, and worker concurrency with an options object. Start queue processing with a lifespan to easily meet OS background task time limits.
 * **Persistent Jobs:** Jobs are persisted with Realm. Because jobs persist, you can easily continue to process jobs across app restarts or in OS background tasks until completed or failed (or app is uninstalled).
 * **Powerful Integrations:** React Native Queue was designed to play well with others. The queue quickly integrates with a variety of OS background task and Worker packages so  processing your jobs in a background service or dedicated thread have never been easier.
@@ -36,7 +36,7 @@ A React Native at-least-once priority job queue / task queue backed by persisten
 ## React Native Compatibility
 
 At the core this package leverages [Realm](https://github.com/realm/realm-js/blob/main/COMPATIBILITY.md) which maintains its own compatibility. This produces
-an interesting problem as we depend on a package which enforces React Native compatibility, but peer to react native. 
+an interesting problem as we depend on a package which enforces React Native compatibility, but peer to react native.
 
 This means it's very crucial to respect to select the proper version and respect the peering.
 
@@ -165,6 +165,28 @@ queue.addWorker('job-name-here', async (id, payload) => { console.log(id); }, {
   // Defaults to 1.
   concurrency: 5,
   
+  // Sets the behavior of failures on this worker. Possible values are: standard | custom
+  // standard: If a job fails more than the maximum number of attempts, it will be marked as failed.
+  // custom: If a job fails more than the maximum number of attempts, it will be retried if the job
+  // Defaults to standard.
+  failureBehavior: 'standard',
+
+  // Set min number of milliseconds to wait before for this worker will perform another attempt.
+  // Defaults to 0.
+  minimumMillisBetweenAttempts: 1 * 1000,
+
+  // A function that determines if a job is runnable. If the job is not runnable, it will be skipped.
+  // This function should return an object with a "runnable" boolean property and a "reason" string property.
+  // If the job is not runnable, the reason will be passed to the onSkipped callback payload as skippedReason.
+  // Defaults to a function that always returns true.
+  isJobRunnable: (job) => {
+    // In this example we will only allow jobs to run if they are at least 15 seconds old.
+    let reason;
+    const diffSec = Math.floor((new Date().getTime() - new Date(job?.created).getTime()) / 1000);
+    if (diffSec < 15) reason = `Must be at least 15 seconds old. Currently ${diffSec} seconds old.`;
+    return { runnable: diffSec >= 15, reason };
+  },
+
   // JOB LIFECYCLE CALLBACKS
   
   // onStart job callback handler is fired when a job begins processing.
@@ -173,6 +195,11 @@ queue.addWorker('job-name-here', async (id, payload) => { console.log(id); }, {
   // (even if the callback returns a promise it will not be "awaited" on).
   // As such, do not place any logic in onStart that your actual job worker function will depend on,
   // this type of logic should of course go inside the job worker function itself.
+  onSkipped: async (id, payload) => {
+    const { skippedReason } = payload;
+    console.log('Job "job-name-here" with id ' + id + ' has been skipped because ' + skippedReason);
+  },
+
   onStart: async (id, payload) => {
     console.log('Job "job-name-here" with id ' + id + ' has started processing.');
   },
