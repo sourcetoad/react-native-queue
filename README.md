@@ -42,6 +42,7 @@ This means it's very crucial to respect to select the proper version and respect
 
 | Queue Version | Realm Version | React Native | Hermes Support |
 |---------------|---------------|--------------|----------------|
+| 3.0.0         | 20.1.0        | => 0.71.4    | Yes            |
 | 2.5.0         | 12.13.1       | => 0.71.4    | Yes            |
 | 2.4.0         | 12.6.1        | => 0.71.4    | Yes            |
 | 2.3.0         | 12.5.0        | => 0.71.4    | Yes            |
