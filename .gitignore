@@ -2,4 +2,5 @@
 /coverage
 /.idea
 /reactNativeQueue.realm*
+/reactNativeQueue.v23*
 *.iml
